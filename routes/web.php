@@ -1,0 +1,144 @@
+<?php
+
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicSite\LandingController;
+use App\Http\Controllers\PublicSite\CatalogController;
+use App\Http\Controllers\Wakif\DashboardController as WakifDashboardController;
+use App\Http\Controllers\Wakif\DonationController as DonationController;
+use App\Http\Controllers\Wakif\CertificateController as CertificateController;
+use App\Http\Controllers\Pelaksana\DashboardController as PelaksanaDashboardController;
+use App\Http\Controllers\Pelaksana\ProgramController as PelaksanaProgramController;
+use App\Http\Controllers\Pelaksana\ReportController as PelaksanaReportController;
+use App\Http\Controllers\Penilai\DashboardController as PenilaiDashboardController;
+use App\Http\Controllers\Penilai\ReviewController as PenilaiReviewController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
+use App\Http\Controllers\Admin\DisbursementController as AdminDisbursementController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\TeamMemberController;
+use Illuminate\Support\Facades\Route;
+
+// ── Public Portal ────────────────────────────────────────────────
+Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::get('/tentang', [LandingController::class, 'about'])->name('about');
+Route::get('/tim', [LandingController::class, 'team'])->name('team');
+Route::get('/program', [CatalogController::class, 'index'])->name('catalog');
+Route::get('/program/{slug}', [CatalogController::class, 'show'])->name('program.show');
+Route::get('/verifikasi/{number}', [CertificateController::class, 'verify'])
+    ->name('certificate.verify')
+    ->where('number', '.*');
+Route::get('/verifikasi-aiw/{code}', [DonationController::class, 'verifyAiw'])->name('wakaf.aiw.verify');
+
+// ── Dashboard (Role-Based Redirect) ─────────────────────────────
+Route::get('/dashboard', function () {
+    $user = auth()->user();
+    return match ($user->role) {
+        'ADMIN' => redirect()->route('admin.dashboard'),
+        'PELAKSANA' => redirect()->route('pelaksana.dashboard'),
+        'PENILAI' => redirect()->route('penilai.dashboard'),
+        default => redirect()->route('wakif.dashboard'),
+    };
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+// ── Public Donation Flow ─────────────────────────────────────────
+Route::prefix('wakaf')->name('wakaf.')->group(function () {
+    Route::get('/{slug}', [DonationController::class, 'create'])->name('create');
+    Route::match(['get', 'post'], '/{slug}/aiw', [DonationController::class, 'aiw'])->name('aiw');
+    Route::post('/store', [DonationController::class, 'store'])->name('store');
+    Route::get('/payment/{donation}', [DonationController::class, 'payment'])->name('payment');
+    Route::post('/confirm/{donation}', [DonationController::class, 'confirmMock'])->name('confirm');
+    Route::get('/success/{donation}', [DonationController::class, 'success'])->name('success');
+    Route::get('/download-aiw/{donation}', [DonationController::class, 'aiwDownload'])->name('aiw.download');
+
+    // Certificates
+    Route::get('/certificate/{certificate}/download', [CertificateController::class, 'download'])->name('certificate.download');
+});
+
+// ── Wakif Dashboard ──────────────────────────────────────────────
+Route::middleware(['auth', 'role:WAKIF'])->prefix('dashboard/wakif')->name('wakif.')->group(function () {
+    Route::get('/', [WakifDashboardController::class, 'index'])->name('dashboard');
+    
+    // Nazhir Application
+    Route::get('/nazhir-application', [\App\Http\Controllers\Wakif\NazhirApplicationController::class, 'index'])->name('nazhir-application.index');
+    Route::post('/nazhir-application', [\App\Http\Controllers\Wakif\NazhirApplicationController::class, 'store'])->name('nazhir-application.store');
+});
+
+// ── Pelaksana Dashboard ──────────────────────────────────────────
+Route::middleware(['auth', 'role:PELAKSANA'])->prefix('dashboard/pelaksana')->name('pelaksana.')->group(function () {
+    Route::get('/', [PelaksanaDashboardController::class, 'index'])->name('dashboard');
+    Route::resource('programs', PelaksanaProgramController::class);
+    Route::get('reports', [PelaksanaReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/{report}', [PelaksanaReportController::class, 'show'])->name('reports.show');
+    Route::get('programs/{program}/reports/create', [PelaksanaReportController::class, 'create'])->name('reports.create');
+    Route::post('programs/{program}/reports', [PelaksanaReportController::class, 'store'])->name('reports.store');
+    Route::post('programs/{program}/pks-upload', [PelaksanaProgramController::class, 'uploadPks'])->name('programs.pks.upload');
+    Route::get('templates', [App\Http\Controllers\Pelaksana\TemplateController::class, 'index'])->name('templates.index');
+});
+
+// ── Penilai Dashboard ────────────────────────────────────────────
+Route::middleware(['auth', 'role:PENILAI'])->prefix('dashboard/penilai')->name('penilai.')->group(function () {
+    Route::get('/', [PenilaiDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/queue', [PenilaiDashboardController::class, 'queue'])->name('queue');
+    Route::get('/history', [PenilaiDashboardController::class, 'history'])->name('history');
+    Route::get('reviews/{program}', [PenilaiReviewController::class, 'show'])->name('reviews.show');
+    Route::post('reviews/{program}', [PenilaiReviewController::class, 'store'])->name('reviews.store');
+    Route::get('reviews/{program}/history', [PenilaiReviewController::class, 'history'])->name('reviews.history');
+});
+
+// ── Admin Dashboard ──────────────────────────────────────────────
+Route::middleware(['auth', 'role:ADMIN'])->prefix('dashboard/admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/programs', [AdminProgramController::class, 'index'])->name('programs.index');
+    Route::get('/programs/{program}', [AdminProgramController::class, 'show'])->name('programs.show');
+    Route::post('/programs/{program}/pks', [AdminProgramController::class, 'generatePks'])->name('programs.pks');
+    Route::post('/programs/{program}/pks-verify', [AdminProgramController::class, 'verifyPks'])->name('programs.pks.verify');
+    Route::get('/programs/{program}/publish', [AdminProgramController::class, 'publish'])->name('programs.publish');
+    Route::post('/programs/{program}/unpublish', [AdminProgramController::class, 'unpublish'])->name('programs.unpublish');
+    Route::post('/programs/{program}/extend', [AdminProgramController::class, 'extendPeriod'])->name('programs.extend');
+    Route::post('/programs/{program}/offline-donation', [AdminProgramController::class, 'storeOfflineDonation'])->name('programs.offline-donation');
+    
+    // Penyaluran Dana
+    Route::get('/disbursements', [AdminDisbursementController::class, 'index'])->name('disbursements.index');
+    Route::post('/disbursements/{program}', [AdminDisbursementController::class, 'store'])->name('disbursements.store');
+    
+    // Dana Offline
+    Route::get('/offline-donations', [App\Http\Controllers\Admin\OfflineDonationController::class, 'index'])->name('offline-donations.index');
+    
+    // Laporan Keuangan
+    Route::get('/financial-reports', [App\Http\Controllers\Admin\FinancialReportController::class, 'index'])->name('financial-reports.index');
+    
+    // Laporan Realisasi
+    Route::get('/reports', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
+    Route::post('/reports/{report}/validate', [\App\Http\Controllers\Admin\ReportController::class, 'validateReport'])->name('reports.validate');
+    Route::get('/infaq', [\App\Http\Controllers\Admin\InfaqController::class, 'index'])->name('infaq.index');
+    Route::post('/infaq/withdraw', [\App\Http\Controllers\Admin\InfaqController::class, 'storeWithdrawal'])->name('infaq.withdraw');
+    
+    // Nazhir Applications
+    Route::get('/nazhir-applications', [\App\Http\Controllers\Admin\NazhirApplicationController::class, 'index'])->name('nazhir-applications.index');
+    Route::post('/nazhir-applications/{application}/approve', [\App\Http\Controllers\Admin\NazhirApplicationController::class, 'approve'])->name('nazhir-applications.approve');
+    Route::post('/nazhir-applications/{application}/reject', [\App\Http\Controllers\Admin\NazhirApplicationController::class, 'reject'])->name('nazhir-applications.reject');
+
+    Route::resource('users', AdminUserController::class);
+    Route::resource('team-members', TeamMemberController::class)->except(['show']);
+    Route::post('/users/{user}/verify-email', [AdminUserController::class, 'verifyEmail'])->name('users.verify-email');
+    Route::get('/settings', [App\Http\Controllers\Admin\SettingController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [App\Http\Controllers\Admin\SettingController::class, 'update'])->name('settings.update');
+    
+    // Templates
+    Route::get('/templates', [App\Http\Controllers\Admin\TemplateController::class, 'index'])->name('templates.index');
+    Route::post('/templates', [App\Http\Controllers\Admin\TemplateController::class, 'store'])->name('templates.store');
+    Route::delete('/templates/{template}', [App\Http\Controllers\Admin\TemplateController::class, 'destroy'])->name('templates.destroy');
+});
+
+// Pelaksana Template Route (Add inside Pelaksana group)
+// I'll add it in the next chunk or just find the Pelaksana group.
+
+
+// ── Profile ──────────────────────────────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';
