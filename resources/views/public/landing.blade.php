@@ -210,9 +210,27 @@
     <div class="relative max-w-4xl mx-auto px-4 text-center">
         <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Mulai Berwakaf Hari Ini</h2>
         <p class="text-white/70 text-lg mb-8 max-w-2xl mx-auto">Setiap rupiah wakaf Anda adalah investasi akhirat yang pahalanya terus mengalir. Bersama WAKAF NUSA, berwakaf jadi mudah dan transparan.</p>
-        <a href="{{ route('register') }}" class="btn-gold text-lg px-10 py-4 inline-flex items-center gap-3">
-            Daftar & Berwakaf Sekarang
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="{{ route('register') }}" class="btn-gold text-lg px-10 py-4 inline-flex items-center gap-3">
+                Daftar & Berwakaf Sekarang
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Land Waqf Catalog Entry -->
+<section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-nu-green-50 text-nu-green-700 text-xs font-black uppercase tracking-widest mb-6">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            Aset Wakaf Terdata
+        </div>
+        <h2 class="text-3xl md:text-4xl font-black text-surface-900 mb-6">Transparansi Aset Wakaf Tanah</h2>
+        <p class="text-surface-500 text-lg mb-10 max-w-2xl mx-auto">Lihat daftar lengkap aset wakaf tanah yang telah terverifikasi dan dikelola secara profesional oleh LWPNU.</p>
+        <a href="{{ route('land-waqf.stats') }}" class="inline-flex items-center gap-3 px-10 py-4 bg-nu-green-600 text-white rounded-2xl font-bold text-lg hover:bg-nu-green-700 transition-all shadow-xl shadow-nu-green-100 group">
+            Buka Data Wakaf Tanah
+            <svg class="w-5 h-5 group-hover:translate-x-2 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
         </a>
     </div>
 </section>

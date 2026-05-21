@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicSite\LandingController;
 use App\Http\Controllers\PublicSite\CatalogController;
+use App\Http\Controllers\PublicSite\LandWaqfController;
 use App\Http\Controllers\Wakif\DashboardController as WakifDashboardController;
 use App\Http\Controllers\Wakif\DonationController as DonationController;
 use App\Http\Controllers\Wakif\CertificateController as CertificateController;
@@ -28,6 +29,71 @@ Route::get('/verifikasi/{number}', [CertificateController::class, 'verify'])
     ->name('certificate.verify')
     ->where('number', '.*');
 Route::get('/verifikasi-aiw/{code}', [DonationController::class, 'verifyAiw'])->name('wakaf.aiw.verify');
+
+// ── Land Waqf Catalog ──────────────────────────────────────────
+Route::get('/wakaf-tanah', [LandWaqfController::class, 'index'])->name('land-waqf.catalog');
+Route::get('/wakaf-tanah/statistik', [LandWaqfController::class, 'statistics'])->name('land-waqf.stats');
+Route::get('/wakaf-tanah/breakdown', [LandWaqfController::class, 'getBreakdown'])->name('land-waqf.breakdown');
+Route::get('/wakaf-tanah/usage-breakdown', [LandWaqfController::class, 'getUsageBreakdown'])->name('land-waqf.usage-breakdown');
+Route::get('/wakaf-tanah/locations', [LandWaqfController::class, 'getSubLocations'])->name('land-waqf.locations');
+Route::get('/wakaf-tanah/{id}', [LandWaqfController::class, 'show'])->name('land-waqf.show');
+Route::get('/verifikasi-wakaf/{nia}', [LandWaqfController::class, 'verifyWaqf'])->name('land-waqf.verify');
+
+// ── LWP Admin Portal ──────────────────────────────────────────
+Route::prefix('lwp')->group(function() {
+    Route::get('/login', [App\Http\Controllers\Lwp\AuthController::class, 'showLogin'])->name('lwp.login');
+    Route::post('/login', [App\Http\Controllers\Lwp\AuthController::class, 'login'])->name('lwp.login.post');
+    Route::get('/register', [App\Http\Controllers\Lwp\AuthController::class, 'showRegister'])->name('lwp.register');
+    Route::post('/register', [App\Http\Controllers\Lwp\AuthController::class, 'register'])->name('lwp.register.post');
+    Route::get('/verify-email/{token}', [App\Http\Controllers\Lwp\AuthController::class, 'verifyEmail'])->name('lwp.verify-email');
+    Route::post('/logout', [App\Http\Controllers\Lwp\AuthController::class, 'logout'])->name('lwp.logout');
+
+    Route::middleware(['auth:lwp'])->group(function() {
+        Route::get('/dashboard', [App\Http\Controllers\Lwp\DashboardController::class, 'index'])->name('lwp.dashboard');
+        Route::get('/dashboard/kabupaten-table', [App\Http\Controllers\Lwp\DashboardController::class, 'dashboardKabupatenTable'])->name('lwp.dashboard.kabupaten-table');
+        Route::get('/profil', [App\Http\Controllers\Lwp\DashboardController::class, 'profil'])->name('lwp.profil');
+        Route::post('/profil', [App\Http\Controllers\Lwp\DashboardController::class, 'updateProfil'])->name('lwp.profil.update');
+        Route::get('/peta-sebaran', [App\Http\Controllers\Lwp\DashboardController::class, 'petaSebaran'])->name('lwp.peta-sebaran');
+        Route::get('/peta-sebaran/data', [App\Http\Controllers\Lwp\DashboardController::class, 'petaSebaranData'])->name('lwp.peta-sebaran.data');
+
+        Route::middleware(['lwp.not.level1'])->group(function() {
+            Route::get('/manajemen-wakaf', [App\Http\Controllers\Lwp\DashboardController::class, 'manajemen'])->name('lwp.manajemen');
+            Route::get('/laporan', [App\Http\Controllers\Lwp\DashboardController::class, 'laporan'])->name('lwp.laporan');
+            Route::get('/laporan/export', [App\Http\Controllers\Lwp\DashboardController::class, 'exportLaporan'])->name('lwp.laporan.export');
+
+            // Land Waqf Actions
+            Route::get('/wakaf/create', [App\Http\Controllers\Lwp\DashboardController::class, 'create'])->name('lwp.wakaf.create');
+            Route::post('/wakaf', [App\Http\Controllers\Lwp\DashboardController::class, 'store'])->name('lwp.wakaf.store');
+            Route::post('/wakaf/validate-legalitas', [App\Http\Controllers\Lwp\DashboardController::class, 'validateLegalitas'])->name('lwp.wakaf.validate-legalitas');
+            Route::get('/wakaf/{id}', [App\Http\Controllers\Lwp\DashboardController::class, 'show'])->name('lwp.wakaf.show');
+            Route::get('/wakaf/{id}/edit', [App\Http\Controllers\Lwp\DashboardController::class, 'edit'])->name('lwp.wakaf.edit');
+            Route::post('/wakaf/{id}', [App\Http\Controllers\Lwp\DashboardController::class, 'update'])->name('lwp.wakaf.update');
+            Route::post('/wakaf/{id}/verify', [App\Http\Controllers\Lwp\DashboardController::class, 'verify'])->name('lwp.wakaf.verify');
+            Route::delete('/wakaf/{id}', [App\Http\Controllers\Lwp\DashboardController::class, 'destroy'])->name('lwp.wakaf.destroy');
+            Route::get('/wakaf/{id}/images', [App\Http\Controllers\Lwp\DashboardController::class, 'getImages'])->name('lwp.wakaf.images');
+            Route::get('/wakaf/{id}/pdf', [App\Http\Controllers\Lwp\DashboardController::class, 'generatePdf'])->name('lwp.wakaf.pdf');
+            Route::delete('/wakaf/image/{id}', [App\Http\Controllers\Lwp\DashboardController::class, 'deleteImage'])->name('lwp.wakaf.image.destroy');
+
+            // User Management Routes
+            Route::get('/users', [App\Http\Controllers\Lwp\UserController::class, 'index'])->name('lwp.users.index');
+            Route::post('/users', [App\Http\Controllers\Lwp\UserController::class, 'store'])->name('lwp.users.store');
+            Route::get('/users/{id}', [App\Http\Controllers\Lwp\UserController::class, 'show'])->name('lwp.users.show');
+            Route::post('/users/{id}/update', [App\Http\Controllers\Lwp\UserController::class, 'update'])->name('lwp.users.update');
+            Route::delete('/users/{id}', [App\Http\Controllers\Lwp\UserController::class, 'destroy'])->name('lwp.users.destroy');
+            Route::post('/users/{id}/reset-password', [App\Http\Controllers\Lwp\UserController::class, 'resetPassword'])->name('lwp.users.reset-password');
+            Route::get('/cabang-helper', [App\Http\Controllers\Lwp\UserController::class, 'getCabang'])->name('lwp.cabang-helper');
+
+            // Trash Routes
+            Route::get('/data-sampah', [App\Http\Controllers\Lwp\DashboardController::class, 'trash'])->name('lwp.trash');
+            Route::post('/data-sampah/wakaf/{id}/restore', [App\Http\Controllers\Lwp\DashboardController::class, 'restoreWakaf'])->name('lwp.trash.wakaf.restore');
+            Route::delete('/data-sampah/wakaf/{id}/permanent', [App\Http\Controllers\Lwp\DashboardController::class, 'permanentDeleteWakaf'])->name('lwp.trash.wakaf.permanent');
+            Route::post('/data-sampah/user/{id}/restore', [App\Http\Controllers\Lwp\DashboardController::class, 'restoreUser'])->name('lwp.trash.user.restore');
+            Route::delete('/data-sampah/user/{id}/permanent', [App\Http\Controllers\Lwp\DashboardController::class, 'permanentDeleteUser'])->name('lwp.trash.user.permanent');
+        });
+    });
+
+    Route::get('/lokasi-helper', [App\Http\Controllers\Lwp\DashboardController::class, 'getLokasi'])->name('lwp.get-lokasi');
+});
 
 // ── Dashboard (Role-Based Redirect) ─────────────────────────────
 Route::get('/dashboard', function () {

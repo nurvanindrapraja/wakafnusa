@@ -42,6 +42,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'lwp' => [
+            'driver' => 'session',
+            'provider' => 'lwp_users',
+        ],
     ],
 
     /*
@@ -65,6 +70,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'lwp_users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\LwpUser::class,
         ],
 
         // 'users' => [
