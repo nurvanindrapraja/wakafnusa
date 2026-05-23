@@ -64,6 +64,10 @@
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                 Manajemen Wakaf
             </a>
+            <a href="{{ route('lwp.pengajuan.index') }}" class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all group {{ str_contains($currentRoute, 'lwp.pengajuan') ? 'bg-nu-green-50 text-nu-green-700 font-black' : 'text-slate-400 hover:bg-slate-50 hover:text-nu-green-600' }}">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Pengajuan Wakif
+            </a>
             <a href="{{ route('lwp.laporan') }}" class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all group {{ $currentRoute == 'lwp.laporan' ? 'bg-nu-green-50 text-nu-green-700 font-black' : 'text-slate-400 hover:bg-slate-50 hover:text-nu-green-600' }}">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 Laporan
@@ -104,7 +108,7 @@
     <!-- Main Content -->
     <div class="flex-1 flex flex-col h-screen overflow-y-auto">
         <!-- Sticky Header -->
-        <header class="sticky top-0 z-30 bg-white/80 border-b border-slate-100 px-6 md:px-12 py-5 sticky-header">
+        <header class="md:sticky top-0 z-30 bg-white/80 border-b border-slate-100 px-6 md:px-12 py-5 sticky-header">
             <div class="flex items-center justify-between gap-6">
                 <div class="flex items-center gap-4">
                     <button id="openSidebar" class="md:hidden text-slate-600 hover:text-nu-green-600 p-2 -ml-2">

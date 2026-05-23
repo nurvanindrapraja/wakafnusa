@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ $title ?? 'Wakaf Nusa' }}</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -20,7 +20,9 @@
                 <x-application-logo />
             </div>
 
-            <div class="w-full sm:max-w-md px-8 py-10 bg-white shadow-card border border-surface-100 overflow-hidden rounded-[2.5rem]">
+            <div class="w-full sm:max-w-md px-8 py-10 bg-white shadow-card border border-surface-100 overflow-hidden rounded-[2.5rem] relative">
+                <!-- Global Top Progress Bar -->
+                <div id="authProgressBar" class="absolute top-0 left-0 right-0 h-1 bg-nu-green-600 transition-all duration-500 transform scale-x-0 origin-left z-50"></div>
                 {{ $slot }}
             </div>
 

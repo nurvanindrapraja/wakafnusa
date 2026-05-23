@@ -13,6 +13,16 @@ class LwpUser extends Authenticatable
     protected $table = 'wk_user';
     protected $primaryKey = 'ID_USER'; // Uppercase
 
+    /**
+     * Get the current connection name for the model.
+     *
+     * @return string|null
+     */
+    public function getConnectionName()
+    {
+        return app()->environment('testing') ? config('database.default') : $this->connection;
+    }
+
     protected $fillable = [
         'ID_CABANG',
         'NAMA_USER',

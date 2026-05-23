@@ -19,10 +19,22 @@
                     Tampilkan Filter
                 </button>
                 
-                <a href="{{ route('lwp.login') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-nu-green-50 text-nu-green-700 rounded-xl font-bold text-sm hover:bg-nu-green-100 transition-all">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
-                    Login Pengurus LWP
-                </a>
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{{ route('land-waqf.register.form') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-nu-green-50 text-nu-green-700 rounded-xl font-bold text-sm hover:bg-nu-green-100 transition-all">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                        Daftarkan Aset Anda
+                    </a>
+                    
+                    <a href="{{ route('land-waqf.check-status.form') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-nu-green-50 text-nu-green-700 rounded-xl font-bold text-sm hover:bg-nu-green-100 transition-all">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        Cek Status Pendaftaran
+                    </a>
+                    
+                    <a href="{{ route('lwp.login') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-nu-green-50 text-nu-green-700 rounded-xl font-bold text-sm hover:bg-nu-green-100 transition-all">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                        Login Pengurus LWP
+                    </a>
+                </div>
             </div>
 
             <!-- Filters Section (Hidden by default) -->

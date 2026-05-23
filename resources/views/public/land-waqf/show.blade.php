@@ -9,7 +9,7 @@
         .leaflet-top, .leaflet-bottom { z-index: 9 !important; }
     </style>
 
-    <div class="py-12 pt-24 bg-surface-50 min-h-screen">
+    <div class="py-12 pt-36 bg-surface-50 min-h-screen">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <nav class="flex mb-8" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
@@ -104,7 +104,7 @@
                     <!-- Middle Grid: Usage Detail (Left) & Legal (Right) -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                         <!-- Technical Details Box (Left) -->
-                        <div class="p-8 md:p-10 rounded-[2.5rem] bg-nu-green-700 text-white shadow-xl shadow-nu-green-100/30 flex flex-col justify-center">
+                        <div class="p-8 md:p-10 rounded-[2.5rem] bg-nu-green-700 text-white shadow-xl shadow-nu-green-100/30 flex flex-col justify-center" style="background-color: #005200;">
                             <h3 class="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-8">Detail Penggunaan</h3>
                             <div class="space-y-8">
                                 <div>

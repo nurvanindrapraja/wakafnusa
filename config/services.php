@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'payment' => [
+        'callback_token' => env('PAYMENT_CALLBACK_TOKEN'),
+    ],
+
 ];

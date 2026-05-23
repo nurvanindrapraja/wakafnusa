@@ -10,10 +10,18 @@
                 <h2 class="text-4xl font-black text-surface-900 sm:text-5xl">Statistik Wakaf Tanah</h2>
                 <p class="mt-4 text-lg text-surface-600">Ringkasan data aset wakaf tanah yang dikelola oleh LWPNU di semua tingkatan kepengurusan NU.</p>
                 
-                <div class="mt-6 flex justify-center gap-4">
+                <div class="mt-6 flex flex-wrap justify-center gap-4">
                     <a href="{{ route('land-waqf.catalog') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-nu-green-600 text-white rounded-xl font-bold text-sm hover:bg-nu-green-700 transition-all shadow-lg shadow-nu-green-100 group">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
                         Buka Katalog Wakaf Tanah
+                    </a>
+                    <a href="{{ route('land-waqf.register.form') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-nu-gold-500 text-nu-green-900 rounded-xl font-bold text-sm hover:bg-nu-gold-600 transition-all shadow-lg shadow-nu-gold-100 group">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
+                        Daftarkan Aset Anda
+                    </a>
+                    <a href="{{ route('land-waqf.check-status.form') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-nu-green-50 text-nu-green-700 rounded-xl font-bold text-sm hover:bg-nu-green-100 transition-all group">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        Cek Status Pendaftaran
                     </a>
                 </div>
             </div>

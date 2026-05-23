@@ -1,58 +1,34 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<p align="center"><img src="public/images/logo_wakaf_nusa_hitam.png" width="300" alt="Wakaf Nusa Logo"></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# README: Ekosistem Digital Wakaf Nahdlatul Ulama (SIWAKNU & Wakaf Nusa)
 
-## About Laravel
+## 1. Pengenalan Ekosistem
+Repository ini memuat panduan ekosistem digitalisasi wakaf di lingkungan Nahdlatul Ulama (NU), yang dikelola oleh Lembaga Wakaf dan Pertanahan PBNU (LWPNU). Sistem ini kini telah terintegrasi untuk mengelola wakaf uang dan pemetaan aset tanah melalui satu pintu. 
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Aplikasi **SIWAKNU** kini sudah terintegrasi secara langsung dengan **Wakaf Nusa**, yang dapat diakses oleh pengguna (pengurus) melalui tautan: **https://wakafnusa.siwaknu.id/lwp/login**.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 2. Wakaf Nusa (Platform Wakaf Uang & Transparansi Publik)
+Wakaf Nusa adalah aplikasi resmi Nahdlatul Ulama untuk memudahkan masyarakat dalam berwakaf uang atau wakaf melalui uang secara transparan, akuntabel, dan sesuai syariah. Platform ini diawasi langsung oleh Badan Wakaf Indonesia (BWI) dan PBNU.
 
-## Learning Laravel
+**Fitur Akses Publik (Masyarakat Umum):**
+Tanpa perlu *login* khusus, masyarakat umum dan calon wakif dapat mengakses portal publik untuk melihat:
+*   **Live Statistics (Statistik Wakaf):** Menampilkan data *real-time* mengenai total dana terkumpul, jumlah wakif yang terdaftar, dan program wakaf yang sedang aktif.
+*   **Katalog Aset Wakaf:** Masyarakat dapat melihat daftar lengkap transparansi aset wakaf tanah yang telah terverifikasi dan dikelola secara profesional oleh LWPNU.
+*   **Katalog Program Wakaf:** Menjelajahi berbagai program wakaf (Sosial, Ibadah, Pendidikan, Ekonomi, dan Kesehatan) untuk menyalurkan dananya secara non-tunai (QRIS/Virtual Account).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 3. SIWAKNU (Sistem Manajemen & Pemetaan Aset)
+SIWAKNU adalah *back-end* manajemen yang dirancang khusus untuk pendataan, pemetaan, dan penyelamatan aset tanah wakaf NU secara digital. Semua data yang dimasukkan ke SIWAKNU akan dipublikasikan ke dalam katalog aset Wakaf Nusa.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Hak Akses Pengguna (Roles)
+Terdapat 4 tingkatan pengguna di dalam sistem manajemen ini:
+*   **Beginner**: Pengguna awal yang telah melakukan pendaftaran dan aktivasi akun. Hak akses *role* ini dibatasi **hanya dapat melihat rekapitulasi data wakaf**.
+*   **User**: Pengelola di tingkat MWC (Kecamatan) yang berhak melakukan penambahan/entri data aset wakaf.
+*   **Moderator**: Pengelola di tingkat PCNU (Cabang) yang bertugas memverifikasi data wakaf dari tingkat di bawahnya dan menambahkan *user*.
+*   **Admin**: Hak akses penuh untuk pengelola di tingkat PWNU (Wilayah) dan PBNU (Pusat).
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Sistem Penomoran Aset (NIA)
+Setiap aset yang berhasil dientri akan otomatis mendapatkan **Nomor Identitas Aset (NIA)** berupa 10 digit angka unik. NIA berfungsi sebagai kunci pencarian untuk menghindari dobel pendataan, yang terdiri dari: kode PWNU (2 digit), kode PCNU (2 digit), dan nomor urut aset (6 digit).

@@ -12,4 +12,14 @@ class Usage extends Model
     public $incrementing = false;
     protected $keyType = 'string';
     public $timestamps = false;
+
+    /**
+     * Get the current connection name for the model.
+     *
+     * @return string|null
+     */
+    public function getConnectionName()
+    {
+        return app()->environment('testing') ? config('database.default') : $this->connection;
+    }
 }

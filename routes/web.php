@@ -39,6 +39,12 @@ Route::get('/wakaf-tanah/locations', [LandWaqfController::class, 'getSubLocation
 Route::get('/wakaf-tanah/{id}', [LandWaqfController::class, 'show'])->name('land-waqf.show');
 Route::get('/verifikasi-wakaf/{nia}', [LandWaqfController::class, 'verifyWaqf'])->name('land-waqf.verify');
 
+// ── Public Asset Registration (Multi-Step Form) ──────────────────
+Route::get('/pendaftaran-aset-wakaf', [App\Http\Controllers\PublicSite\AssetRegistrationController::class, 'showForm'])->name('land-waqf.register.form');
+Route::post('/pendaftaran-aset-wakaf', [App\Http\Controllers\PublicSite\AssetRegistrationController::class, 'store'])->name('land-waqf.register.store');
+Route::get('/pendaftaran-aset-wakaf/cek-status', [App\Http\Controllers\PublicSite\AssetRegistrationController::class, 'showStatusForm'])->name('land-waqf.check-status.form');
+Route::get('/pendaftaran-aset-wakaf/download/{id}', [App\Http\Controllers\PublicSite\AssetRegistrationController::class, 'downloadPdf'])->name('land-waqf.register.download');
+
 // ── LWP Admin Portal ──────────────────────────────────────────
 Route::prefix('lwp')->group(function() {
     Route::get('/login', [App\Http\Controllers\Lwp\AuthController::class, 'showLogin'])->name('lwp.login');
@@ -73,6 +79,14 @@ Route::prefix('lwp')->group(function() {
             Route::get('/wakaf/{id}/images', [App\Http\Controllers\Lwp\DashboardController::class, 'getImages'])->name('lwp.wakaf.images');
             Route::get('/wakaf/{id}/pdf', [App\Http\Controllers\Lwp\DashboardController::class, 'generatePdf'])->name('lwp.wakaf.pdf');
             Route::delete('/wakaf/image/{id}', [App\Http\Controllers\Lwp\DashboardController::class, 'deleteImage'])->name('lwp.wakaf.image.destroy');
+
+            // Public Registrations (Pengajuan Wakif) Actions
+            Route::get('/pengajuan', [App\Http\Controllers\Lwp\PengajuanController::class, 'index'])->name('lwp.pengajuan.index');
+            Route::get('/pengajuan/{id}', [App\Http\Controllers\Lwp\PengajuanController::class, 'show'])->name('lwp.pengajuan.show');
+            Route::post('/pengajuan/{id}/verify-lapangan', [App\Http\Controllers\Lwp\PengajuanController::class, 'verifyLapangan'])->name('lwp.pengajuan.verify-lapangan');
+            Route::post('/pengajuan/{id}/complete', [App\Http\Controllers\Lwp\PengajuanController::class, 'complete'])->name('lwp.pengajuan.complete');
+            Route::post('/pengajuan/{id}/cancel', [App\Http\Controllers\Lwp\PengajuanController::class, 'cancel'])->name('lwp.pengajuan.cancel');
+            Route::post('/pengajuan/{id}/export', [App\Http\Controllers\Lwp\PengajuanController::class, 'exportToSiwaknu'])->name('lwp.pengajuan.export');
 
             // User Management Routes
             Route::get('/users', [App\Http\Controllers\Lwp\UserController::class, 'index'])->name('lwp.users.index');

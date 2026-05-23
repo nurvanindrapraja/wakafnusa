@@ -13,7 +13,9 @@ return new class extends Migration
     public function up(): void
     {
         // Enums in MySQL are best changed via raw SQL
-        DB::statement("ALTER TABLE wn_donations MODIFY COLUMN payment_method ENUM('VIRTUAL_ACCOUNT', 'QRIS', 'OFFLINE')");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE wn_donations MODIFY COLUMN payment_method ENUM('VIRTUAL_ACCOUNT', 'QRIS', 'OFFLINE')");
+        }
     }
 
     /**
@@ -21,6 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE wn_donations MODIFY COLUMN payment_method ENUM('VIRTUAL_ACCOUNT', 'QRIS')");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE wn_donations MODIFY COLUMN payment_method ENUM('VIRTUAL_ACCOUNT', 'QRIS')");
+        }
     }
 };
