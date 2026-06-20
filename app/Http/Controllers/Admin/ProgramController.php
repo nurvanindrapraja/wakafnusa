@@ -90,32 +90,32 @@ class ProgramController extends Controller
 
     public function publish(Program $program)
     {
-        if ($program->status !== 'PKS_PENDING' && $program->status !== 'RECOMMENDED') {
-            return back()->with('error', 'Program harus sudah melalui tahap PKS sebelum dipublikasikan.');
-        }
-
         if (!$program->pks || $program->pks->status !== 'ACTIVE') {
             return back()->with('error', 'PKS harus diverifikasi terlebih dahulu sebelum publikasi.');
         }
 
-        $program->update([
-            'status' => 'PUBLISHED',
-            'published_at' => now(),
-        ]);
+        $updateData = ['published_at' => now()];
+        if ($program->status === 'PKS_PENDING' || $program->status === 'RECOMMENDED') {
+            $updateData['status'] = 'PUBLISHED';
+        }
+
+        $program->update($updateData);
 
         return back()->with('success', 'Program berhasil dipublikasikan ke katalog publik.');
     }
 
     public function unpublish(Program $program)
     {
-        if ($program->status !== 'PUBLISHED') {
-            return back()->with('error', 'Hanya program yang sudah terbit yang dapat disembunyikan.');
+        if (is_null($program->published_at)) {
+            return back()->with('error', 'Program sudah tidak dipublikasikan.');
         }
 
-        $program->update([
-            'status' => 'PKS_PENDING',
-            'published_at' => null,
-        ]);
+        $updateData = ['published_at' => null];
+        if ($program->status === 'PUBLISHED') {
+            $updateData['status'] = 'PKS_PENDING';
+        }
+
+        $program->update($updateData);
 
         return back()->with('success', 'Program berhasil disembunyikan dari publik.');
     }

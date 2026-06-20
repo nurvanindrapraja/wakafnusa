@@ -68,6 +68,7 @@ class Program extends Model
         if ($this->status === 'COMPLETED') return false;
         if ($this->collected_amount >= $this->target_amount) return false;
         if (now()->startOfDay()->gt($this->end_date)) return false;
+        if (is_null($this->published_at)) return false;
         
         return in_array($this->status, ['PUBLISHED', 'FUNDED', 'IMPLEMENTING']);
     }
@@ -110,7 +111,7 @@ class Program extends Model
 
     public function scopeActive($query)
     {
-        return $query->whereIn('status', ['PUBLISHED', 'FUNDED', 'IMPLEMENTING', 'COMPLETED']);
+        return $query->whereNotNull('published_at')->whereIn('status', ['PUBLISHED', 'FUNDED', 'IMPLEMENTING', 'COMPLETED']);
     }
 
     public function scopeByCategory($query, string $category)

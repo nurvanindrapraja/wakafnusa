@@ -62,7 +62,7 @@
                     <div class="flex flex-wrap gap-4 pt-6 border-t border-surface-50">
                         @if($program->status === 'RECOMMENDED')
                             <button type="button" @click="pksModal = true" class="px-6 py-2 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 transition-all">Upload Draft PKS</button>
-                        @elseif($program->status === 'PKS_PENDING')
+                        @elseif(!$program->published_at && !in_array($program->status, ['PROPOSED', 'REVISION_NEEDED', 'REJECTED']))
                             <button type="button" 
                                 @click="publishConfirmModal = true"
                                 @disabled(!$program->pks || $program->pks->status !== 'ACTIVE')
@@ -75,7 +75,7 @@
                                     Verifikasi PKS untuk Publish
                                 </div>
                             @endif
-                        @elseif($program->status === 'PUBLISHED')
+                        @elseif($program->published_at)
                             <button type="button" 
                                 @click="unpublishConfirmModal = true"
                                 class="px-6 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-all">

@@ -131,11 +131,11 @@
                                                     PKS
                                                 </button>
                                             </form>
-                                        @elseif($program->status === 'PKS_PENDING')
+                                        @elseif(!$program->published_at && !in_array($program->status, ['PROPOSED', 'REVISION_NEEDED', 'REJECTED']))
                                             <button @click="openPublish({{ json_encode($program->load('latestReview')) }})" class="px-3 py-1.5 bg-nu-green-600 text-white text-[10px] font-bold rounded-lg hover:bg-nu-green-700 transition-all">
                                                 Publish
                                             </button>
-                                        @elseif($program->status === 'PUBLISHED')
+                                        @elseif($program->published_at)
                                             <button @click="openUnpublish({{ json_encode($program) }})" class="px-3 py-1.5 bg-red-600 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 transition-all">
                                                 Unpublish
                                             </button>
