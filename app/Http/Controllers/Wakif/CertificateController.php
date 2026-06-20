@@ -15,7 +15,7 @@ class CertificateController extends Controller
     {
         // Permission check
         if ($certificate->wakif_id) {
-            if (!auth()->check() || (auth()->user()->role === 'WAKIF' && $certificate->wakif_id !== auth()->id())) {
+            if (!auth()->check() || (auth()->user()->role === 'WAKIF' && $certificate->wakif_id != auth()->id())) {
                 abort(403, 'Anda tidak memiliki akses ke sertifikat ini.');
             }
         }

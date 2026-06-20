@@ -36,7 +36,7 @@ class ReportController extends Controller
 
     public function show(Report $report)
     {
-        if ($report->submitted_by !== auth()->id()) {
+        if ($report->submitted_by != auth()->id()) {
             abort(403);
         }
 
@@ -44,7 +44,7 @@ class ReportController extends Controller
     }
     public function create(Program $program)
     {
-        if ($program->pelaksana_id !== auth()->id()) {
+        if ($program->pelaksana_id != auth()->id()) {
             abort(403);
         }
 
@@ -58,7 +58,7 @@ class ReportController extends Controller
 
     public function store(Request $request, Program $program)
     {
-        if ($program->pelaksana_id !== auth()->id()) {
+        if ($program->pelaksana_id != auth()->id()) {
             abort(403);
         }
 

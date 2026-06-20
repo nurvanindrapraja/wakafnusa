@@ -93,7 +93,7 @@ class ProgramController extends Controller
 
     public function show(Program $program)
     {
-        if ($program->pelaksana_id !== auth()->id()) {
+        if ($program->pelaksana_id != auth()->id()) {
             abort(403);
         }
 
@@ -104,7 +104,7 @@ class ProgramController extends Controller
 
     public function uploadPks(Request $request, Program $program)
     {
-        if ($program->pelaksana_id !== auth()->id()) {
+        if ($program->pelaksana_id != auth()->id()) {
             abort(403);
         }
 
@@ -130,7 +130,7 @@ class ProgramController extends Controller
 
     public function edit(Program $program)
     {
-        if ($program->pelaksana_id !== auth()->id() || !in_array($program->status, ['PROPOSED', 'REVISION_NEEDED'])) {
+        if ($program->pelaksana_id != auth()->id() || !in_array($program->status, ['PROPOSED', 'REVISION_NEEDED'])) {
             abort(403);
         }
 
@@ -139,7 +139,7 @@ class ProgramController extends Controller
 
     public function update(Request $request, Program $program)
     {
-        if ($program->pelaksana_id !== auth()->id() || !in_array($program->status, ['PROPOSED', 'REVISION_NEEDED'])) {
+        if ($program->pelaksana_id != auth()->id() || !in_array($program->status, ['PROPOSED', 'REVISION_NEEDED'])) {
             abort(403);
         }
 
@@ -194,7 +194,7 @@ class ProgramController extends Controller
 
     public function destroy(Program $program)
     {
-        if ($program->pelaksana_id !== auth()->id() || in_array($program->status, ['PUBLISHED', 'FUNDED', 'IMPLEMENTING', 'COMPLETED'])) {
+        if ($program->pelaksana_id != auth()->id() || in_array($program->status, ['PUBLISHED', 'FUNDED', 'IMPLEMENTING', 'COMPLETED'])) {
             abort(403, 'Program yang sudah disetujui tidak dapat dihapus.');
         }
 
