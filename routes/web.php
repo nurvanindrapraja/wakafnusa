@@ -172,7 +172,7 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('dashboard/admin')->name('admi
     Route::get('/programs/{program}', [AdminProgramController::class, 'show'])->name('programs.show');
     Route::post('/programs/{program}/pks', [AdminProgramController::class, 'generatePks'])->name('programs.pks');
     Route::post('/programs/{program}/pks-verify', [AdminProgramController::class, 'verifyPks'])->name('programs.pks.verify');
-    Route::get('/programs/{program}/publish', [AdminProgramController::class, 'publish'])->name('programs.publish');
+    Route::post('/programs/{program}/publish', [AdminProgramController::class, 'publish'])->name('programs.publish');
     Route::post('/programs/{program}/unpublish', [AdminProgramController::class, 'unpublish'])->name('programs.unpublish');
     Route::post('/programs/{program}/extend', [AdminProgramController::class, 'extendPeriod'])->name('programs.extend');
     Route::post('/programs/{program}/offline-donation', [AdminProgramController::class, 'storeOfflineDonation'])->name('programs.offline-donation');
