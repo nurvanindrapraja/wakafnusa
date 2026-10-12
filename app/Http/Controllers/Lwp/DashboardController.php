@@ -172,13 +172,108 @@ class DashboardController extends Controller
             });
         }
 
-        $items = $query->orderBy('ID_WAKAF', 'desc')->paginate(10);
+        // Cascading Location Filters
+        if ($request->filled('kelurahan')) {
+            $query->where('KODE_LOKASI', 'LIKE', $request->kelurahan . '%');
+        } elseif ($request->filled('kecamatan')) {
+            $query->where('KODE_LOKASI', 'LIKE', $request->kecamatan . '%');
+        } elseif ($request->filled('kabupaten')) {
+            $query->where('KODE_LOKASI', 'LIKE', $request->kabupaten . '%');
+        } elseif ($request->filled('provinsi')) {
+            $query->where('KODE_LOKASI', 'LIKE', $request->provinsi . '%');
+        }
+
+        $items = $query->orderBy('ID_WAKAF', 'desc')->paginate(10)->appends($request->query());
 
         if ($request->ajax()) {
             return view('lwp.dashboard.partials._waqf_list', compact('items'))->render();
         }
 
-        return view('lwp.dashboard.manajemen', compact('items', 'user'));
+        $provinces = collect();
+        $filterKabupatens = collect();
+        $filterKecamatans = collect();
+        $filterKelurahans = collect();
+
+        if (in_array($level, [9, 91])) { // Admin (App) / Admin (PBNU)
+            $provinces = \App\Models\Location::whereRaw("LENGTH(kode_lokasi) = 2")
+                ->orderBy('nama_lokasi', 'asc')
+                ->get();
+
+            if ($request->filled('provinsi')) {
+                $filterKabupatens = \App\Models\Location::where('kode_lokasi', 'like', $request->provinsi . '%')
+                    ->whereRaw("LENGTH(kode_lokasi) = 5")
+                    ->orderBy('nama_lokasi', 'asc')
+                    ->get();
+            }
+            if ($request->filled('kabupaten')) {
+                $filterKecamatans = \App\Models\Location::where('kode_lokasi', 'like', $request->kabupaten . '%')
+                    ->whereRaw("LENGTH(kode_lokasi) = 8")
+                    ->orderBy('nama_lokasi', 'asc')
+                    ->get();
+            }
+            if ($request->filled('kecamatan')) {
+                $filterKelurahans = \App\Models\Location::where('kode_lokasi', 'like', $request->kecamatan . '%')
+                    ->whereRaw("LENGTH(kode_lokasi) = 13")
+                    ->orderBy('nama_lokasi', 'asc')
+                    ->get();
+            }
+        } elseif ($level === 31) { // PWNU (Provinsi fixed)
+            $provPrefix = substr($loc, 0, 2);
+            $filterKabupatens = \App\Models\Location::where('kode_lokasi', 'like', $provPrefix . '%')
+                ->whereRaw("LENGTH(kode_lokasi) = 5")
+                ->orderBy('nama_lokasi', 'asc')
+                ->get();
+
+            if ($request->filled('kabupaten')) {
+                $filterKecamatans = \App\Models\Location::where('kode_lokasi', 'like', $request->kabupaten . '%')
+                    ->whereRaw("LENGTH(kode_lokasi) = 8")
+                    ->orderBy('nama_lokasi', 'asc')
+                    ->get();
+            }
+            if ($request->filled('kecamatan')) {
+                $filterKelurahans = \App\Models\Location::where('kode_lokasi', 'like', $request->kecamatan . '%')
+                    ->whereRaw("LENGTH(kode_lokasi) = 13")
+                    ->orderBy('nama_lokasi', 'asc')
+                    ->get();
+            }
+        } elseif ($level === 3) { // PCNU (Kota/Kab fixed)
+            $kabPrefix = substr($loc, 0, 5);
+            $filterKecamatans = \App\Models\Location::where('kode_lokasi', 'like', $kabPrefix . '%')
+                ->whereRaw("LENGTH(kode_lokasi) = 8")
+                ->orderBy('nama_lokasi', 'asc')
+                ->get();
+
+            if ($request->filled('kecamatan')) {
+                $filterKelurahans = \App\Models\Location::where('kode_lokasi', 'like', $request->kecamatan . '%')
+                    ->whereRaw("LENGTH(kode_lokasi) = 13")
+                    ->orderBy('nama_lokasi', 'asc')
+                    ->get();
+            }
+        } elseif ($level === 2) { // MWCNU (Kecamatan fixed)
+            $kecPrefix = substr($loc, 0, 8);
+            $filterKelurahans = \App\Models\Location::where('kode_lokasi', 'like', $kecPrefix . '%')
+                ->whereRaw("LENGTH(kode_lokasi) = 13")
+                ->orderBy('nama_lokasi', 'asc')
+                ->get();
+        } else {
+            // Level 1 / Lainnya
+            if (!empty($loc)) {
+                $filterKelurahans = \App\Models\Location::where('kode_lokasi', 'like', substr($loc, 0, 8) . '%')
+                    ->whereRaw("LENGTH(kode_lokasi) = 13")
+                    ->orderBy('nama_lokasi', 'asc')
+                    ->get();
+            }
+        }
+
+        return view('lwp.dashboard.manajemen', compact(
+            'items',
+            'user',
+            'level',
+            'provinces',
+            'filterKabupatens',
+            'filterKecamatans',
+            'filterKelurahans'
+        ));
     }
 
     public function show($id)
@@ -1041,6 +1136,44 @@ class DashboardController extends Controller
             default => 'Provinsi'
         };
 
+        // Resolve location hierarchy for report headers
+        $selectedLokasi = [
+            'provinsi' => null,
+            'kabupaten' => null,
+            'kecamatan' => null,
+            'kelurahan' => null,
+        ];
+        $locationHierarchy = [];
+
+        if (!empty($kodeLokasi)) {
+            $codes = [];
+            if (strlen($kodeLokasi) >= 2) {
+                $codes['provinsi'] = substr($kodeLokasi, 0, 2);
+            }
+            if (strlen($kodeLokasi) >= 5) {
+                $codes['kabupaten'] = substr($kodeLokasi, 0, 5);
+            }
+            if (strlen($kodeLokasi) >= 8) {
+                $codes['kecamatan'] = substr($kodeLokasi, 0, 8);
+            }
+            if (strlen($kodeLokasi) >= 13) {
+                $codes['kelurahan'] = substr($kodeLokasi, 0, 13);
+            }
+
+            $locRows = \App\Models\Location::whereIn('kode_lokasi', array_values($codes))
+                ->pluck('nama_lokasi', 'kode_lokasi');
+
+            foreach ($codes as $type => $code) {
+                if (isset($locRows[$code])) {
+                    $selectedLokasi[$type] = [
+                        'kode' => $code,
+                        'nama' => $locRows[$code],
+                    ];
+                    $locationHierarchy[] = $locRows[$code];
+                }
+            }
+        }
+
         if ($format === 'excel') {
             $filename = "Laporan_Aset_Wakaf_Per_" . $levelLabel . "_" . date('Ymd_His') . ".csv";
             
@@ -1054,9 +1187,26 @@ class DashboardController extends Controller
 
             $columns = ['NO', 'KODE LOKASI', 'NAMA WILAYAH (' . strtoupper($levelLabel) . ')', 'JUMLAH ASET', 'TOTAL LUAS (M2)'];
 
-            $callback = function() use($data, $columns) {
+            $callback = function() use($data, $columns, $selectedLokasi) {
                 $file = fopen('php://output', 'w');
                 fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+                if (!empty($selectedLokasi['provinsi'])) {
+                    fputcsv($file, ['PROVINSI', $selectedLokasi['provinsi']['nama']]);
+                }
+                if (!empty($selectedLokasi['kabupaten'])) {
+                    fputcsv($file, ['KABUPATEN / KOTA', $selectedLokasi['kabupaten']['nama']]);
+                }
+                if (!empty($selectedLokasi['kecamatan'])) {
+                    fputcsv($file, ['KECAMATAN', $selectedLokasi['kecamatan']['nama']]);
+                }
+                if (!empty($selectedLokasi['kelurahan'])) {
+                    fputcsv($file, ['KELURAHAN / DESA', $selectedLokasi['kelurahan']['nama']]);
+                }
+                if (!empty(array_filter($selectedLokasi))) {
+                    fputcsv($file, []);
+                }
+
                 fputcsv($file, $columns);
 
                 foreach ($data as $index => $row) {
@@ -1077,7 +1227,7 @@ class DashboardController extends Controller
 
         if ($format === 'pdf') {
             $title = "LAPORAN REKAPITULASI ASET WAKAF PER " . strtoupper(str_replace('_', '/', $levelLabel));
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('lwp.dashboard.pdf_laporan', compact('data', 'title', 'levelLabel'));
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('lwp.dashboard.pdf_laporan', compact('data', 'title', 'levelLabel', 'selectedLokasi', 'locationHierarchy'));
             
             return $pdf->download("Laporan_Aset_Wakaf_Per_" . $levelLabel . "_" . date('Ymd_His') . ".pdf");
         }

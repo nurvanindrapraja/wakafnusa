@@ -4,19 +4,27 @@
     <meta charset="utf-8">
     <title>{{ $title }}</title>
     <style>
-        body { font-family: sans-serif; font-size: 11px; color: #334155; }
-        .header { text-align: center; margin-bottom: 25px; border-bottom: 3px double #006400; padding-bottom: 10px; }
-        .header h1 { font-size: 18px; color: #006400; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
-        .header h2 { font-size: 12px; color: #b8860b; margin: 5px 0 0; text-transform: uppercase; }
-        .meta { margin-bottom: 15px; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background-color: #006400; color: #ffffff; padding: 10px; text-align: left; text-transform: uppercase; font-size: 10px; }
-        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
-        tr:nth-child(even) { background-color: #f8fafc; }
+        body { font-family: sans-serif; font-size: 11px; color: #334155; line-height: 1.4; }
+        .header { text-align: center; margin-bottom: 18px; border-bottom: 3px double #006400; padding-bottom: 10px; }
+        .header h1 { font-size: 17px; color: #006400; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold; }
+        .header h2 { font-size: 12px; color: #b8860b; margin: 4px 0 0; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }
+
+        .meta-box { margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; background-color: #f8fafc; }
+        .meta-table { width: 100%; border-collapse: collapse; }
+        .meta-table td { padding: 2px 4px; border: none; font-size: 10.5px; }
+        .meta-label { width: 140px; font-weight: bold; color: #475569; text-transform: uppercase; font-size: 10px; }
+        .meta-sep { width: 12px; text-align: center; font-weight: bold; color: #475569; }
+        .meta-val { font-weight: bold; color: #0f172a; font-size: 10.5px; }
+
+        table.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table.data-table th { background-color: #006400; color: #ffffff; padding: 9px 8px; text-align: left; text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.5px; }
+        table.data-table td { padding: 7px 8px; border-bottom: 1px solid #e2e8f0; font-size: 10px; }
+        table.data-table tr:nth-child(even) { background-color: #f8fafc; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .total-row { background-color: #f1f5f9 !important; font-weight: bold; border-top: 2px solid #006400; border-bottom: 2px solid #006400; }
-        .footer { margin-top: 30px; text-align: right; font-size: 10px; color: #64748b; }
+        .total-row td { font-weight: bold; color: #006400; font-size: 10.5px; }
+        .footer { margin-top: 25px; text-align: right; font-size: 9px; color: #64748b; font-style: italic; }
     </style>
 </head>
 <body>
@@ -25,16 +33,50 @@
         <h2>{{ $title }}</h2>
     </div>
     
-    <div class="meta">
-        Tanggal Unduh: {{ date('d F Y H:i') }}
+    <div class="meta-box">
+        <table class="meta-table">
+            @if(!empty($selectedLokasi['provinsi']))
+            <tr>
+                <td class="meta-label">Provinsi</td>
+                <td class="meta-sep">:</td>
+                <td class="meta-val">{{ strtoupper($selectedLokasi['provinsi']['nama']) }}</td>
+            </tr>
+            @endif
+            @if(!empty($selectedLokasi['kabupaten']))
+            <tr>
+                <td class="meta-label">Kabupaten / Kota</td>
+                <td class="meta-sep">:</td>
+                <td class="meta-val">{{ strtoupper($selectedLokasi['kabupaten']['nama']) }}</td>
+            </tr>
+            @endif
+            @if(!empty($selectedLokasi['kecamatan']))
+            <tr>
+                <td class="meta-label">Kecamatan</td>
+                <td class="meta-sep">:</td>
+                <td class="meta-val">{{ strtoupper($selectedLokasi['kecamatan']['nama']) }}</td>
+            </tr>
+            @endif
+            @if(!empty($selectedLokasi['kelurahan']))
+            <tr>
+                <td class="meta-label">Kelurahan / Desa</td>
+                <td class="meta-sep">:</td>
+                <td class="meta-val">{{ strtoupper($selectedLokasi['kelurahan']['nama']) }}</td>
+            </tr>
+            @endif
+            <tr>
+                <td class="meta-label">Tanggal Unduh</td>
+                <td class="meta-sep">:</td>
+                <td class="meta-val">{{ date('d F Y H:i') }}</td>
+            </tr>
+        </table>
     </div>
 
-    <table>
+    <table class="data-table">
         <thead>
             <tr>
                 <th width="5%" class="text-center">No</th>
-                <th width="20%">Kode Lokasi</th>
-                <th width="45%">Nama Wilayah ({{ str_replace('_', '/', $levelLabel) }})</th>
+                <th width="18%">Kode Lokasi</th>
+                <th width="47%">Nama Wilayah ({{ str_replace('_', '/', $levelLabel) }})</th>
                 <th width="15%" class="text-center">Jumlah Aset</th>
                 <th width="15%" class="text-right">Total Luas (m²)</th>
             </tr>

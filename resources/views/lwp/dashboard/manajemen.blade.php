@@ -17,10 +17,16 @@
                 </button>
             </div>
 
+            @php
+                $hasActiveFilter = request()->filled('wakif') || request()->filled('penggunaan') || request()->filled('lokasi') || request()->filled('provinsi') || request()->filled('kabupaten') || request()->filled('kecamatan') || request()->filled('kelurahan');
+            @endphp
             <!-- Filter Toggle -->
-            <button id="toggleFilter" class="flex items-center gap-3 px-6 py-3.5 bg-white border border-slate-100 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-600 hover:border-nu-green-200 hover:text-nu-green-600 transition-all shadow-sm group">
-                <svg class="w-5 h-5 text-slate-400 group-hover:text-nu-green-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+            <button id="toggleFilter" class="flex items-center gap-3 px-6 py-3.5 bg-white border rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all shadow-sm group {{ $hasActiveFilter ? 'bg-nu-green-50 text-nu-green-600 border-nu-green-200' : 'border-slate-100 text-slate-600 hover:border-nu-green-200 hover:text-nu-green-600' }}">
+                <svg class="w-5 h-5 {{ $hasActiveFilter ? 'text-nu-green-600' : 'text-slate-400 group-hover:text-nu-green-600' }} transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
                 Filter Data
+                @if($hasActiveFilter)
+                    <span class="w-2 h-2 rounded-full bg-nu-green-600"></span>
+                @endif
             </button>
         </div>
 
@@ -30,23 +36,147 @@
         </button>
     </div>
 
-    <!-- Filter Form (Hidden by Default) -->
-    <div id="filterForm" class="hidden mb-10 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm transition-all duration-300">
-        <form id="lwpSearchForm" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="space-y-2">
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Wakif</label>
-                <input type="text" name="wakif" placeholder="Cari nama wakif..." class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-nu-green-500/20 focus:border-nu-green-500 outline-none transition-all">
+    <!-- Filter Form -->
+    <div id="filterForm" class="{{ $hasActiveFilter ? '' : 'hidden' }} mb-10 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm transition-all duration-300">
+        <form id="lwpSearchForm" class="space-y-6">
+            <!-- Row 1: Pencarian Teks -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Wakif</label>
+                    <input type="text" name="wakif" value="{{ request('wakif') }}" placeholder="Cari nama wakif..." class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-nu-green-500/20 focus:border-nu-green-500 outline-none transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Penggunaan</label>
+                    <input type="text" name="penggunaan" value="{{ request('penggunaan') }}" placeholder="Masjid, Sekolah, dll..." class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-nu-green-500/20 focus:border-nu-green-500 outline-none transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kata Kunci Alamat / Wilayah</label>
+                    <input type="text" name="lokasi" value="{{ request('lokasi') }}" placeholder="Prov, Kab, Kec, Kel, Alamat..." class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-nu-green-500/20 focus:border-nu-green-500 outline-none transition-all">
+                </div>
             </div>
-            <div class="space-y-2">
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Penggunaan</label>
-                <input type="text" name="penggunaan" placeholder="Masjid, Sekolah, dll..." class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-nu-green-500/20 focus:border-nu-green-500 outline-none transition-all">
+
+            <!-- Row 2: Filter Lokasi Berjenjang -->
+            <div class="pt-6 border-t border-slate-100">
+                <div class="flex items-center gap-2 mb-4">
+                    <svg class="w-4 h-4 text-nu-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span class="text-xs font-black uppercase tracking-wider text-slate-700">Filter Lokasi Berjenjang</span>
+                </div>
+
+                @if(in_array($level, [9, 91]))
+                    {{-- Admin atau PBNU: Provinsi -> Kota/Kab -> Kecamatan -> Kelurahan --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Provinsi</label>
+                            <select name="provinsi" id="filter_provinsi" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm">
+                                <option value="">Semua Provinsi</option>
+                                @foreach($provinces as $prov)
+                                    <option value="{{ $prov->kode_lokasi }}" {{ request('provinsi') == $prov->kode_lokasi ? 'selected' : '' }}>{{ $prov->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kota / Kabupaten</label>
+                            <select name="kabupaten" id="filter_kabupaten" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm disabled:opacity-60 disabled:bg-slate-100" {{ empty(request('provinsi')) && $filterKabupatens->isEmpty() ? 'disabled' : '' }}>
+                                <option value="">Semua Kota / Kab</option>
+                                @foreach($filterKabupatens as $kab)
+                                    <option value="{{ $kab->kode_lokasi }}" {{ request('kabupaten') == $kab->kode_lokasi ? 'selected' : '' }}>{{ $kab->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kecamatan</label>
+                            <select name="kecamatan" id="filter_kecamatan" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm disabled:opacity-60 disabled:bg-slate-100" {{ empty(request('kabupaten')) && $filterKecamatans->isEmpty() ? 'disabled' : '' }}>
+                                <option value="">Semua Kecamatan</option>
+                                @foreach($filterKecamatans as $kec)
+                                    <option value="{{ $kec->kode_lokasi }}" {{ request('kecamatan') == $kec->kode_lokasi ? 'selected' : '' }}>{{ $kec->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kelurahan / Desa</label>
+                            <select name="kelurahan" id="filter_kelurahan" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm disabled:opacity-60 disabled:bg-slate-100" {{ empty(request('kecamatan')) && $filterKelurahans->isEmpty() ? 'disabled' : '' }}>
+                                <option value="">Semua Kelurahan</option>
+                                @foreach($filterKelurahans as $kel)
+                                    <option value="{{ $kel->kode_lokasi }}" {{ request('kelurahan') == $kel->kode_lokasi ? 'selected' : '' }}>{{ $kel->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                @elseif($level === 31)
+                    {{-- PWNU: Kota/Kab -> Kecamatan -> Kelurahan --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kota / Kabupaten</label>
+                            <select name="kabupaten" id="filter_kabupaten" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm">
+                                <option value="">Semua Kota / Kab</option>
+                                @foreach($filterKabupatens as $kab)
+                                    <option value="{{ $kab->kode_lokasi }}" {{ request('kabupaten') == $kab->kode_lokasi ? 'selected' : '' }}>{{ $kab->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kecamatan</label>
+                            <select name="kecamatan" id="filter_kecamatan" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm disabled:opacity-60 disabled:bg-slate-100" {{ empty(request('kabupaten')) && $filterKecamatans->isEmpty() ? 'disabled' : '' }}>
+                                <option value="">Semua Kecamatan</option>
+                                @foreach($filterKecamatans as $kec)
+                                    <option value="{{ $kec->kode_lokasi }}" {{ request('kecamatan') == $kec->kode_lokasi ? 'selected' : '' }}>{{ $kec->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kelurahan / Desa</label>
+                            <select name="kelurahan" id="filter_kelurahan" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm disabled:opacity-60 disabled:bg-slate-100" {{ empty(request('kecamatan')) && $filterKelurahans->isEmpty() ? 'disabled' : '' }}>
+                                <option value="">Semua Kelurahan</option>
+                                @foreach($filterKelurahans as $kel)
+                                    <option value="{{ $kel->kode_lokasi }}" {{ request('kelurahan') == $kel->kode_lokasi ? 'selected' : '' }}>{{ $kel->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                @elseif($level === 3)
+                    {{-- PCNU: Kecamatan -> Kelurahan --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kecamatan</label>
+                            <select name="kecamatan" id="filter_kecamatan" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm">
+                                <option value="">Semua Kecamatan</option>
+                                @foreach($filterKecamatans as $kec)
+                                    <option value="{{ $kec->kode_lokasi }}" {{ request('kecamatan') == $kec->kode_lokasi ? 'selected' : '' }}>{{ $kec->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kelurahan / Desa</label>
+                            <select name="kelurahan" id="filter_kelurahan" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm disabled:opacity-60 disabled:bg-slate-100" {{ empty(request('kecamatan')) && $filterKelurahans->isEmpty() ? 'disabled' : '' }}>
+                                <option value="">Semua Kelurahan</option>
+                                @foreach($filterKelurahans as $kel)
+                                    <option value="{{ $kel->kode_lokasi }}" {{ request('kelurahan') == $kel->kode_lokasi ? 'selected' : '' }}>{{ $kel->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                @else
+                    {{-- MWC (Level 2) & lainnya: Kelurahan --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kelurahan / Desa</label>
+                            <select name="kelurahan" id="filter_kelurahan" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:border-nu-green-500 focus:ring-2 focus:ring-nu-green-500/20 transition-all shadow-sm">
+                                <option value="">Semua Kelurahan</option>
+                                @foreach($filterKelurahans as $kel)
+                                    <option value="{{ $kel->kode_lokasi }}" {{ request('kelurahan') == $kel->kode_lokasi ? 'selected' : '' }}>{{ $kel->nama_lokasi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                @endif
             </div>
-            <div class="space-y-2">
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lokasi (Wilayah)</label>
-                <input type="text" name="lokasi" placeholder="Prov, Kab, Kec, Kel..." class="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-nu-green-500/20 focus:border-nu-green-500 outline-none transition-all">
-            </div>
-            <div class="md:col-span-3 flex justify-end gap-3 pt-4">
-                <button type="reset" class="px-6 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all">Reset</button>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" id="btnResetFilter" class="px-6 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all">Reset</button>
                 <button type="submit" class="px-8 py-3 bg-nu-green-600 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-nu-green-100 hover:bg-nu-green-700 transition-all">Terapkan Filter</button>
             </div>
         </form>
@@ -361,8 +491,15 @@
         window.refreshCurrentList = function() {
             const form = document.getElementById('lwpSearchForm');
             const params = new URLSearchParams(new FormData(form));
+            for (const [key, val] of [...params.entries()]) {
+                if (!val || val.trim() === '') {
+                    params.delete(key);
+                }
+            }
             params.set('page', currentManajemenPage);
-            window.loadData(`{{ route('lwp.manajemen') }}?${params.toString()}`);
+            const targetUrl = `{{ route('lwp.manajemen') }}?${params.toString()}`;
+            window.history.pushState({}, '', targetUrl);
+            window.loadData(targetUrl);
         }
 
         window.confirmDelete = function(id) {
@@ -1044,6 +1181,123 @@
                 });
             });
 
+            // Cascading Location Dropdowns
+            function fetchFilterLokasi(parentCode, targetLevel, targetSelect, defaultText) {
+                if (!parentCode) {
+                    targetSelect.innerHTML = `<option value="">${defaultText}</option>`;
+                    targetSelect.disabled = true;
+                    return Promise.resolve();
+                }
+                targetSelect.disabled = true;
+                targetSelect.innerHTML = `<option value="">Memuat...</option>`;
+                
+                return fetch(`/lwp/lokasi-helper?parent=${encodeURIComponent(parentCode)}&level=${targetLevel}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        let options = `<option value="">${defaultText}</option>`;
+                        data.forEach(item => {
+                            options += `<option value="${item.kode_lokasi}">${item.nama_lokasi}</option>`;
+                        });
+                        targetSelect.innerHTML = options;
+                        targetSelect.disabled = false;
+                    })
+                    .catch(err => {
+                        console.error('Error fetching location:', err);
+                        targetSelect.innerHTML = `<option value="">Gagal memuat data</option>`;
+                    });
+            }
+
+            const selProv = document.getElementById('filter_provinsi');
+            const selKab = document.getElementById('filter_kabupaten');
+            const selKec = document.getElementById('filter_kecamatan');
+            const selKel = document.getElementById('filter_kelurahan');
+
+            if (selProv) {
+                selProv.addEventListener('change', function() {
+                    const provVal = this.value;
+                    if (selKab) {
+                        fetchFilterLokasi(provVal, 'kab', selKab, 'Semua Kota / Kab');
+                    }
+                    if (selKec) {
+                        selKec.innerHTML = '<option value="">Semua Kecamatan</option>';
+                        selKec.disabled = true;
+                    }
+                    if (selKel) {
+                        selKel.innerHTML = '<option value="">Semua Kelurahan</option>';
+                        selKel.disabled = true;
+                    }
+                });
+            }
+
+            if (selKab) {
+                selKab.addEventListener('change', function() {
+                    const kabVal = this.value;
+                    if (selKec) {
+                        fetchFilterLokasi(kabVal, 'kec', selKec, 'Semua Kecamatan');
+                    }
+                    if (selKel) {
+                        selKel.innerHTML = '<option value="">Semua Kelurahan</option>';
+                        selKel.disabled = true;
+                    }
+                });
+            }
+
+            if (selKec) {
+                selKec.addEventListener('change', function() {
+                    const kecVal = this.value;
+                    if (selKel) {
+                        fetchFilterLokasi(kecVal, 'kel', selKel, 'Semua Kelurahan');
+                    }
+                });
+            }
+
+            // Reset Filter Button Handler
+            const btnReset = document.getElementById('btnResetFilter');
+            if (btnReset) {
+                btnReset.addEventListener('click', function() {
+                    searchForm.reset();
+                    
+                    if (selProv) {
+                        selProv.value = '';
+                        if (selKab) {
+                            selKab.innerHTML = '<option value="">Semua Kota / Kab</option>';
+                            selKab.disabled = true;
+                        }
+                        if (selKec) {
+                            selKec.innerHTML = '<option value="">Semua Kecamatan</option>';
+                            selKec.disabled = true;
+                        }
+                        if (selKel) {
+                            selKel.innerHTML = '<option value="">Semua Kelurahan</option>';
+                            selKel.disabled = true;
+                        }
+                    } else if (selKab && {{ in_array($level, [31]) ? 'true' : 'false' }}) {
+                        selKab.value = '';
+                        if (selKec) {
+                            selKec.innerHTML = '<option value="">Semua Kecamatan</option>';
+                            selKec.disabled = true;
+                        }
+                        if (selKel) {
+                            selKel.innerHTML = '<option value="">Semua Kelurahan</option>';
+                            selKel.disabled = true;
+                        }
+                    } else if (selKec && {{ in_array($level, [3]) ? 'true' : 'false' }}) {
+                        selKec.value = '';
+                        if (selKel) {
+                            selKel.innerHTML = '<option value="">Semua Kelurahan</option>';
+                            selKel.disabled = true;
+                        }
+                    } else if (selKel) {
+                        selKel.value = '';
+                    }
+
+                    currentManajemenPage = 1;
+                    const targetUrl = "{{ route('lwp.manajemen') }}";
+                    window.history.pushState({}, '', targetUrl);
+                    window.loadData(targetUrl);
+                });
+            }
+
             searchForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 currentManajemenPage = 1; // Reset to page 1 on new search
@@ -1054,7 +1308,23 @@
                 const pageLink = e.target.closest('.lwp-ajax-pagination a');
                 if (pageLink) {
                     e.preventDefault();
-                    window.loadData(pageLink.href);
+                    const urlObj = new URL(pageLink.href, window.location.origin);
+                    currentManajemenPage = urlObj.searchParams.get('page') || 1;
+
+                    // Merge active values from form to guarantee filters are never lost
+                    const formData = new FormData(searchForm);
+                    for (const [key, val] of formData.entries()) {
+                        const trimmed = val ? val.trim() : '';
+                        if (trimmed !== '') {
+                            urlObj.searchParams.set(key, trimmed);
+                        } else {
+                            urlObj.searchParams.delete(key);
+                        }
+                    }
+
+                    const finalUrl = urlObj.toString();
+                    window.history.pushState({}, '', finalUrl);
+                    window.loadData(finalUrl);
                 }
             });
         });
