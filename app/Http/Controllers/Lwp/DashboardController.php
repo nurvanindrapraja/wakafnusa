@@ -1174,55 +1174,164 @@ class DashboardController extends Controller
             }
         }
 
-        if ($format === 'excel') {
-            $filename = "Laporan_Aset_Wakaf_Per_" . $levelLabel . "_" . date('Ymd_His') . ".csv";
-            
-            $headers = [
-                "Content-type"        => "text/csv; charset=UTF-8",
-                "Content-Disposition" => "attachment; filename=$filename",
-                "Pragma"              => "no-cache",
-                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-                "Expires"             => "0"
-            ];
+        if (in_array($format, ['excel', 'xlsx'])) {
+            $filename = "Laporan_Aset_Wakaf_Per_" . $levelLabel . "_" . date('Ymd_His') . ".xlsx";
 
-            $columns = ['NO', 'KODE LOKASI', 'NAMA WILAYAH (' . strtoupper($levelLabel) . ')', 'JUMLAH ASET', 'TOTAL LUAS (M2)'];
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Laporan Aset Wakaf');
 
-            $callback = function() use($data, $columns, $selectedLokasi) {
-                $file = fopen('php://output', 'w');
-                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            // Page Setup
+            $sheet->getPageSetup()->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_PORTRAIT);
+            $sheet->getPageSetup()->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4);
 
-                if (!empty($selectedLokasi['provinsi'])) {
-                    fputcsv($file, ['PROVINSI', $selectedLokasi['provinsi']['nama']]);
-                }
-                if (!empty($selectedLokasi['kabupaten'])) {
-                    fputcsv($file, ['KABUPATEN / KOTA', $selectedLokasi['kabupaten']['nama']]);
-                }
-                if (!empty($selectedLokasi['kecamatan'])) {
-                    fputcsv($file, ['KECAMATAN', $selectedLokasi['kecamatan']['nama']]);
-                }
-                if (!empty($selectedLokasi['kelurahan'])) {
-                    fputcsv($file, ['KELURAHAN / DESA', $selectedLokasi['kelurahan']['nama']]);
-                }
-                if (!empty(array_filter($selectedLokasi))) {
-                    fputcsv($file, []);
-                }
+            // Title Kop
+            $sheet->setCellValue('A1', 'LEMBAGA WAKAF DAN PERTANAHAN NAHDLATUL ULAMA');
+            $sheet->mergeCells('A1:E1');
+            $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('006400'));
+            $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
-                fputcsv($file, $columns);
+            $titleLaporan = "LAPORAN REKAPITULASI ASET WAKAF PER " . strtoupper(str_replace('_', '/', $levelLabel));
+            $sheet->setCellValue('A2', $titleLaporan);
+            $sheet->mergeCells('A2:E2');
+            $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(11)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('B8860B'));
+            $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
-                foreach ($data as $index => $row) {
-                    fputcsv($file, [
-                        $index + 1,
-                        $row->KODE_LOKASI,
-                        $row->NAMA_LOKASI,
-                        $row->JML_ASET,
-                        $row->JML_LUAS
-                    ]);
-                }
+            // Metadata Wilayah & Tanggal
+            $currentRow = 4;
+            if (!empty($selectedLokasi['provinsi'])) {
+                $sheet->setCellValue('A' . $currentRow, 'PROVINSI');
+                $sheet->setCellValue('B' . $currentRow, ': ' . strtoupper($selectedLokasi['provinsi']['nama']));
+                $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+                $currentRow++;
+            }
+            if (!empty($selectedLokasi['kabupaten'])) {
+                $sheet->setCellValue('A' . $currentRow, 'KABUPATEN / KOTA');
+                $sheet->setCellValue('B' . $currentRow, ': ' . strtoupper($selectedLokasi['kabupaten']['nama']));
+                $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+                $currentRow++;
+            }
+            if (!empty($selectedLokasi['kecamatan'])) {
+                $sheet->setCellValue('A' . $currentRow, 'KECAMATAN');
+                $sheet->setCellValue('B' . $currentRow, ': ' . strtoupper($selectedLokasi['kecamatan']['nama']));
+                $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+                $currentRow++;
+            }
+            if (!empty($selectedLokasi['kelurahan'])) {
+                $sheet->setCellValue('A' . $currentRow, 'KELURAHAN / DESA');
+                $sheet->setCellValue('B' . $currentRow, ': ' . strtoupper($selectedLokasi['kelurahan']['nama']));
+                $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+                $currentRow++;
+            }
+            $sheet->setCellValue('A' . $currentRow, 'TANGGAL UNDUH');
+            $sheet->setCellValue('B' . $currentRow, ': ' . date('d F Y H:i'));
+            $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
 
-                fclose($file);
-            };
+            $currentRow += 2; // spasi sebelum tabel
 
-            return response()->stream($callback, 200, $headers);
+            // Header Tabel
+            $headerRow = $currentRow;
+            $sheet->setCellValue('A' . $headerRow, 'NO');
+            $sheet->setCellValue('B' . $headerRow, 'KODE LOKASI');
+            $sheet->setCellValue('C' . $headerRow, 'NAMA WILAYAH (' . strtoupper(str_replace('_', '/', $levelLabel)) . ')');
+            $sheet->setCellValue('D' . $headerRow, 'JUMLAH ASET');
+            $sheet->setCellValue('E' . $headerRow, 'TOTAL LUAS (M²)');
+
+            $sheet->getStyle("A{$headerRow}:E{$headerRow}")->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                    'size' => 10,
+                ],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '006400'],
+                ],
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+            $sheet->getRowDimension($headerRow)->setRowHeight(26);
+
+            $currentRow++;
+            $dataStartRow = $currentRow;
+            $totalAset = 0;
+            $totalLuas = 0;
+
+            foreach ($data as $index => $row) {
+                $sheet->setCellValue('A' . $currentRow, $index + 1);
+                $sheet->setCellValueExplicit('B' . $currentRow, (string) $row->KODE_LOKASI, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $sheet->setCellValue('C' . $currentRow, strtoupper($row->NAMA_LOKASI));
+                $sheet->setCellValue('D' . $currentRow, (int) $row->JML_ASET);
+                $sheet->setCellValue('E' . $currentRow, (float) $row->JML_LUAS);
+
+                $totalAset += (int) $row->JML_ASET;
+                $totalLuas += (float) $row->JML_LUAS;
+                $currentRow++;
+            }
+            $dataEndRow = $currentRow - 1;
+
+            // Total Row
+            $totalRow = $currentRow;
+            $sheet->setCellValue('A' . $totalRow, 'TOTAL KESELURUHAN:');
+            $sheet->mergeCells("A{$totalRow}:C{$totalRow}");
+            $sheet->setCellValue('D' . $totalRow, $totalAset);
+            $sheet->setCellValue('E' . $totalRow, $totalLuas);
+
+            // Styling Table Rows
+            if ($dataEndRow >= $dataStartRow) {
+                $sheet->getStyle("A{$dataStartRow}:A{$dataEndRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("B{$dataStartRow}:B{$dataEndRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("C{$dataStartRow}:C{$dataEndRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+                $sheet->getStyle("D{$dataStartRow}:D{$dataEndRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+                $sheet->getStyle("E{$dataStartRow}:E{$dataEndRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+                $sheet->getStyle("D{$dataStartRow}:D{$dataEndRow}")->getNumberFormat()->setFormatCode('#,##0');
+                $sheet->getStyle("E{$dataStartRow}:E{$dataEndRow}")->getNumberFormat()->setFormatCode('#,##0.00');
+            }
+
+            // Styling Total Row
+            $sheet->getStyle("A{$totalRow}:E{$totalRow}")->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => '006400'],
+                    'size' => 10.5,
+                ],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'F1F5F9'],
+                ],
+            ]);
+            $sheet->getStyle("A{$totalRow}:C{$totalRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("D{$totalRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("E{$totalRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("D{$totalRow}")->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle("E{$totalRow}")->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getRowDimension($totalRow)->setRowHeight(22);
+
+            // Borders on entire table
+            $sheet->getStyle("A{$headerRow}:E{$totalRow}")->applyFromArray([
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['rgb' => 'CBD5E1'],
+                    ],
+                ],
+            ]);
+
+            // Auto-size columns
+            foreach (['A', 'B', 'C', 'D', 'E'] as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+            return response()->streamDownload(function() use ($writer) {
+                $writer->save('php://output');
+            }, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'max-age=0',
+            ]);
         }
 
         if ($format === 'pdf') {
