@@ -1359,13 +1359,13 @@ class DashboardController extends Controller
         $provinsi = $request->input('provinsi');
 
         // Validation rule:
-        // When selected provinsi and kab/kota (or kecamatan, kelurahan), allow.
-        // But if ONLY provinsi is selected (or nothing is selected) and not level 2 or 3, reject.
-        $hasKabOrLower = !empty($kabupaten) || !empty($kecamatan) || !empty($kelurahan);
-        $isScopedToKabOrLower = in_array($currentLevel, [3, 2]);
+        // Tombol dan ekspor hanya diizinkan jika minimal KECAMATAN (atau Kelurahan) dipilih.
+        // Jika hanya Provinsi atau Kab/Kota yang dipilih, ditolak untuk mencegah beban data terlalu besar.
+        $hasKecOrLower = !empty($kecamatan) || !empty($kelurahan);
+        $isScopedToKecOrLower = ($currentLevel === 2);
 
-        if (!$hasKabOrLower && !$isScopedToKabOrLower) {
-            abort(400, 'Pilihan minimal Kota / Kabupaten diperlukan untuk mengunduh laporan.');
+        if (!$hasKecOrLower && !$isScopedToKecOrLower) {
+            abort(400, 'Pilihan minimal Kecamatan diperlukan untuk mengunduh data aset wakaf.');
         }
 
         $query = \DB::connection('mysql_no_prefix')
@@ -1463,8 +1463,10 @@ class DashboardController extends Controller
 
     protected function exportManajemenExcel($items, $selectedLokasi, $filterInfo = null)
     {
-        $locLabel = !empty($selectedLokasi['kabupaten']) ? \Illuminate\Support\Str::slug($selectedLokasi['kabupaten']['nama'], '_') : 'Wilayah';
-        $filename = "Daftar_Aset_Wakaf_" . $locLabel . "_" . date('Ymd_His') . ".xlsx";
+        $locLabel = !empty($selectedLokasi['kecamatan']) 
+            ? \Illuminate\Support\Str::slug($selectedLokasi['kecamatan']['nama'], '_') 
+            : (!empty($selectedLokasi['kabupaten']) ? \Illuminate\Support\Str::slug($selectedLokasi['kabupaten']['nama'], '_') : 'Wilayah');
+        $filename = "Daftar_Aset_Wakaf_Kec_" . $locLabel . "_" . date('Ymd_His') . ".xlsx";
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -1485,8 +1487,18 @@ class DashboardController extends Controller
         $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(11)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('B8860B'));
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
+        // Subtitle: Informasi Diunduh dari SIWAKNU
+        $sheet->setCellValue('A3', 'Diunduh dari Sistem Informasi Wakaf Nahdlatul Ulama (SIWAKNU)');
+        $sheet->mergeCells('A3:J3');
+        $sheet->getStyle('A3')->getFont()->setItalic(true)->setSize(9.5)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('475569'));
+        $sheet->getStyle('A3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
         // Metadata Wilayah & Info
-        $currentRow = 4;
+        $currentRow = 5;
+        $sheet->setCellValue('A' . $currentRow, 'SUMBER DATA');
+        $sheet->setCellValue('B' . $currentRow, ': SISTEM INFORMASI WAKAF NAHDLATUL ULAMA (SIWAKNU)');
+        $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+        $currentRow++;
         if (!empty($selectedLokasi['provinsi'])) {
             $sheet->setCellValue('A' . $currentRow, 'PROVINSI');
             $sheet->setCellValue('B' . $currentRow, ': ' . strtoupper($selectedLokasi['provinsi']['nama']));
@@ -1666,11 +1678,15 @@ class DashboardController extends Controller
 
     protected function exportManajemenPdf($items, $selectedLokasi, $filterInfo = null)
     {
-        $locLabel = !empty($selectedLokasi['kabupaten']) ? \Illuminate\Support\Str::slug($selectedLokasi['kabupaten']['nama'], '_') : 'Wilayah';
-        $filename = "Daftar_Aset_Wakaf_" . $locLabel . "_" . date('Ymd_His') . ".pdf";
+        $locLabel = !empty($selectedLokasi['kecamatan']) 
+            ? \Illuminate\Support\Str::slug($selectedLokasi['kecamatan']['nama'], '_') 
+            : (!empty($selectedLokasi['kabupaten']) ? \Illuminate\Support\Str::slug($selectedLokasi['kabupaten']['nama'], '_') : 'Wilayah');
+        $filename = "Daftar_Aset_Wakaf_Kec_" . $locLabel . "_" . date('Ymd_His') . ".pdf";
 
         $title = "DAFTAR ASET WAKAF TANAH NAHDLATUL ULAMA";
-        if (!empty($selectedLokasi['kabupaten'])) {
+        if (!empty($selectedLokasi['kecamatan'])) {
+            $title .= " KEC. " . strtoupper($selectedLokasi['kecamatan']['nama']);
+        } elseif (!empty($selectedLokasi['kabupaten'])) {
             $title .= " " . strtoupper($selectedLokasi['kabupaten']['nama']);
         }
 

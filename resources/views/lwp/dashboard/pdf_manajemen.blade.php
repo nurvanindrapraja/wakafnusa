@@ -36,6 +36,13 @@
             font-weight: bold;
             letter-spacing: 0.5px;
         }
+        .header-source {
+            font-size: 9px;
+            color: #475569;
+            font-style: italic;
+            margin-top: 4px;
+            letter-spacing: 0.3px;
+        }
 
         .meta-box {
             margin-bottom: 12px;
@@ -139,6 +146,7 @@
     <div class="header">
         <h1>Lembaga Wakaf dan Pertanahan Nahdlatul Ulama</h1>
         <h2>{{ $title ?? 'DAFTAR ASET WAKAF TANAH NAHDLATUL ULAMA' }}</h2>
+        <div class="header-source">Diunduh dari Sistem Informasi Wakaf Nahdlatul Ulama (SIWAKNU)</div>
     </div>
     
     <div class="meta-box">
@@ -178,6 +186,11 @@
                 </td>
                 <td width="50%">
                     <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td class="meta-label">Sumber Data</td>
+                            <td class="meta-sep">:</td>
+                            <td class="meta-val">SIWAKNU (Sistem Informasi Wakaf NU)</td>
+                        </tr>
                         <tr>
                             <td class="meta-label">Tanggal Unduh</td>
                             <td class="meta-sep">:</td>

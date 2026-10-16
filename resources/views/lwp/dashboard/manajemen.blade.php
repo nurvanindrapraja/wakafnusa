@@ -20,9 +20,9 @@
             @php
                 $hasActiveFilter = request()->filled('wakif') || request()->filled('penggunaan') || request()->filled('lokasi') || request()->filled('provinsi') || request()->filled('kabupaten') || request()->filled('kecamatan') || request()->filled('kelurahan');
                 $canExportInitial = false;
-                if (in_array($level, [3, 2])) {
+                if ($level === 2) {
                     $canExportInitial = true;
-                } elseif (request()->filled('kabupaten') || request()->filled('kecamatan') || request()->filled('kelurahan')) {
+                } elseif (request()->filled('kecamatan') || request()->filled('kelurahan')) {
                     $canExportInitial = true;
                 }
             @endphp
@@ -1256,18 +1256,20 @@
             const selKec = document.getElementById('filter_kecamatan');
             const selKel = document.getElementById('filter_kelurahan');
 
-            // Dynamic Export Buttons Logic
+            // Dynamic Export Buttons Logic (Muncul hanya jika Kecamatan / Kelurahan dipilih)
             function shouldShowExport() {
                 const userLevel = {{ (int) $level }};
-                if (userLevel === 3 || userLevel === 2) {
-                    return true; // Already scoped to Kab/Kota or Kecamatan
+                if (userLevel === 2) {
+                    return true; // MWCNU sudah scoped ke satu Kecamatan
                 }
 
-                const hasKab = selKab && selKab.value !== '';
+                const selKec = document.getElementById('filter_kecamatan');
+                const selKel = document.getElementById('filter_kelurahan');
+
                 const hasKec = selKec && selKec.value !== '';
                 const hasKel = selKel && selKel.value !== '';
 
-                return Boolean(hasKab || hasKec || hasKel);
+                return Boolean(hasKec || hasKel);
             }
 
             function updateExportButtons() {
