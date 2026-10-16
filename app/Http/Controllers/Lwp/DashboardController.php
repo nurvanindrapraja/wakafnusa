@@ -1344,6 +1344,346 @@ class DashboardController extends Controller
         return back();
     }
 
+    public function exportManajemenWakaf(Request $request)
+    {
+        @ini_set('memory_limit', '1024M');
+        @set_time_limit(300);
+
+        $currentUser = Auth::guard('lwp')->user();
+        $currentLevel = (int) $currentUser->LEVEL;
+        $userLoc = $currentUser->KODE_LOKASI;
+
+        $kabupaten = $request->input('kabupaten');
+        $kecamatan = $request->input('kecamatan');
+        $kelurahan = $request->input('kelurahan');
+        $provinsi = $request->input('provinsi');
+
+        // Validation rule:
+        // When selected provinsi and kab/kota (or kecamatan, kelurahan), allow.
+        // But if ONLY provinsi is selected (or nothing is selected) and not level 2 or 3, reject.
+        $hasKabOrLower = !empty($kabupaten) || !empty($kecamatan) || !empty($kelurahan);
+        $isScopedToKabOrLower = in_array($currentLevel, [3, 2]);
+
+        if (!$hasKabOrLower && !$isScopedToKabOrLower) {
+            abort(400, 'Pilihan minimal Kota / Kabupaten diperlukan untuk mengunduh laporan.');
+        }
+
+        $query = \DB::connection('mysql_no_prefix')
+            ->table('vw_wakaf_detail')
+            ->where('ISDEL', 0)
+            ->whereIn('ISOK', [0, 1]);
+
+        // Scoping based on user role level
+        if ($currentLevel === 31) {
+            $query->where('KODE_LOKASI', 'LIKE', substr($userLoc, 0, 2) . '%');
+        } elseif ($currentLevel === 3) {
+            $query->where('KODE_LOKASI', 'LIKE', substr($userLoc, 0, 5) . '%');
+        } elseif ($currentLevel === 2) {
+            $query->where('KODE_LOKASI', 'LIKE', substr($userLoc, 0, 8) . '%');
+        }
+
+        // Search Filters
+        if ($request->filled('wakif')) {
+            $query->where('WAKIF', 'LIKE', '%' . $request->wakif . '%');
+        }
+        if ($request->filled('penggunaan')) {
+            $query->where('PENGGUNAAN', 'LIKE', '%' . $request->penggunaan . '%');
+        }
+        if ($request->filled('lokasi')) {
+            $lokasi = $request->lokasi;
+            $query->where(function($q) use ($lokasi) {
+                $q->where('PROV', 'LIKE', '%' . $lokasi . '%')
+                  ->orWhere('KAB', 'LIKE', '%' . $lokasi . '%')
+                  ->orWhere('KEC', 'LIKE', '%' . $lokasi . '%')
+                  ->orWhere('KEL', 'LIKE', '%' . $lokasi . '%');
+            });
+        }
+
+        // Cascading Location Filters
+        if ($request->filled('kelurahan')) {
+            $query->where('KODE_LOKASI', 'LIKE', $request->kelurahan . '%');
+        } elseif ($request->filled('kecamatan')) {
+            $query->where('KODE_LOKASI', 'LIKE', $request->kecamatan . '%');
+        } elseif ($request->filled('kabupaten')) {
+            $query->where('KODE_LOKASI', 'LIKE', $request->kabupaten . '%');
+        } elseif ($request->filled('provinsi')) {
+            $query->where('KODE_LOKASI', 'LIKE', $request->provinsi . '%');
+        }
+
+        $items = $query->orderBy('ID_WAKAF', 'desc')->get();
+
+        // Resolve location names hierarchy for metadata
+        $selectedLokasi = [
+            'provinsi' => null,
+            'kabupaten' => null,
+            'kecamatan' => null,
+            'kelurahan' => null,
+        ];
+
+        $targetCode = $request->kelurahan ?: ($request->kecamatan ?: ($request->kabupaten ?: ($request->provinsi ?: '')));
+        if (empty($targetCode) && in_array($currentLevel, [3, 2])) {
+            $targetCode = substr($userLoc, 0, ($currentLevel === 3 ? 5 : 8));
+        }
+
+        if (!empty($targetCode)) {
+            $codes = [];
+            if (strlen($targetCode) >= 2) $codes['provinsi'] = substr($targetCode, 0, 2);
+            if (strlen($targetCode) >= 5) $codes['kabupaten'] = substr($targetCode, 0, 5);
+            if (strlen($targetCode) >= 8) $codes['kecamatan'] = substr($targetCode, 0, 8);
+            if (strlen($targetCode) >= 13) $codes['kelurahan'] = substr($targetCode, 0, 13);
+
+            $locRows = \App\Models\Location::whereIn('kode_lokasi', array_values($codes))
+                ->pluck('nama_lokasi', 'kode_lokasi');
+
+            foreach ($codes as $type => $c) {
+                if (isset($locRows[$c])) {
+                    $selectedLokasi[$type] = [
+                        'kode' => $c,
+                        'nama' => $locRows[$c]
+                    ];
+                }
+            }
+        }
+
+        // Additional filter info text if any
+        $filterParts = [];
+        if ($request->filled('wakif')) $filterParts[] = 'Wakif: "' . $request->wakif . '"';
+        if ($request->filled('penggunaan')) $filterParts[] = 'Penggunaan: "' . $request->penggunaan . '"';
+        if ($request->filled('lokasi')) $filterParts[] = 'Kata Kunci: "' . $request->lokasi . '"';
+        $filterInfo = !empty($filterParts) ? implode(', ', $filterParts) : null;
+
+        $format = strtolower($request->query('format', 'excel'));
+
+        if (in_array($format, ['excel', 'xlsx'])) {
+            return $this->exportManajemenExcel($items, $selectedLokasi, $filterInfo);
+        } else {
+            return $this->exportManajemenPdf($items, $selectedLokasi, $filterInfo);
+        }
+    }
+
+    protected function exportManajemenExcel($items, $selectedLokasi, $filterInfo = null)
+    {
+        $locLabel = !empty($selectedLokasi['kabupaten']) ? \Illuminate\Support\Str::slug($selectedLokasi['kabupaten']['nama'], '_') : 'Wilayah';
+        $filename = "Daftar_Aset_Wakaf_" . $locLabel . "_" . date('Ymd_His') . ".xlsx";
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Data Aset Wakaf');
+
+        // Page setup
+        $sheet->getPageSetup()->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);
+        $sheet->getPageSetup()->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4);
+
+        // Title Kop
+        $sheet->setCellValue('A1', 'LEMBAGA WAKAF DAN PERTANAHAN NAHDLATUL ULAMA');
+        $sheet->mergeCells('A1:J1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('006400'));
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $sheet->setCellValue('A2', 'DAFTAR ASET WAKAF TANAH NAHDLATUL ULAMA');
+        $sheet->mergeCells('A2:J2');
+        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(11)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('B8860B'));
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // Metadata Wilayah & Info
+        $currentRow = 4;
+        if (!empty($selectedLokasi['provinsi'])) {
+            $sheet->setCellValue('A' . $currentRow, 'PROVINSI');
+            $sheet->setCellValue('B' . $currentRow, ': ' . strtoupper($selectedLokasi['provinsi']['nama']));
+            $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+            $currentRow++;
+        }
+        if (!empty($selectedLokasi['kabupaten'])) {
+            $sheet->setCellValue('A' . $currentRow, 'KABUPATEN / KOTA');
+            $sheet->setCellValue('B' . $currentRow, ': ' . strtoupper($selectedLokasi['kabupaten']['nama']));
+            $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+            $currentRow++;
+        }
+        if (!empty($selectedLokasi['kecamatan'])) {
+            $sheet->setCellValue('A' . $currentRow, 'KECAMATAN');
+            $sheet->setCellValue('B' . $currentRow, ': ' . strtoupper($selectedLokasi['kecamatan']['nama']));
+            $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+            $currentRow++;
+        }
+        if (!empty($selectedLokasi['kelurahan'])) {
+            $sheet->setCellValue('A' . $currentRow, 'KELURAHAN / DESA');
+            $sheet->setCellValue('B' . $currentRow, ': ' . strtoupper($selectedLokasi['kelurahan']['nama']));
+            $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+            $currentRow++;
+        }
+        $sheet->setCellValue('A' . $currentRow, 'TANGGAL UNDUH');
+        $sheet->setCellValue('B' . $currentRow, ': ' . date('d F Y H:i') . ' WIB');
+        $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+        $currentRow++;
+
+        $sheet->setCellValue('A' . $currentRow, 'TOTAL DATA');
+        $sheet->setCellValue('B' . $currentRow, ': ' . number_format(count($items), 0, ',', '.') . ' Bidang Tanah');
+        $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+
+        if (!empty($filterInfo)) {
+            $currentRow++;
+            $sheet->setCellValue('A' . $currentRow, 'FILTER TAMBAHAN');
+            $sheet->setCellValue('B' . $currentRow, ': ' . $filterInfo);
+            $sheet->getStyle('A' . $currentRow)->getFont()->setBold(true);
+        }
+
+        $currentRow += 2; // spasi sebelum tabel
+
+        // Header Tabel: 10 kolom persis sesuai permintaan
+        // Alamat, kelurahan, kecamatan, wakif, nazhir, penggunaan, luas, no aiw, no sert
+        $headerRow = $currentRow;
+        $sheet->setCellValue('A' . $headerRow, 'NO');
+        $sheet->setCellValue('B' . $headerRow, 'ALAMAT');
+        $sheet->setCellValue('C' . $headerRow, 'KELURAHAN');
+        $sheet->setCellValue('D' . $headerRow, 'KECAMATAN');
+        $sheet->setCellValue('E' . $headerRow, 'WAKIF');
+        $sheet->setCellValue('F' . $headerRow, 'NAZHIR');
+        $sheet->setCellValue('G' . $headerRow, 'PENGGUNAAN');
+        $sheet->setCellValue('H' . $headerRow, 'LUAS (M²)');
+        $sheet->setCellValue('I' . $headerRow, 'NO. AIW');
+        $sheet->setCellValue('J' . $headerRow, 'NO. SERTIFIKAT');
+
+        $sheet->getStyle("A{$headerRow}:J{$headerRow}")->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+                'size' => 10,
+            ],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '006400'],
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+        $sheet->getRowDimension($headerRow)->setRowHeight(26);
+
+        // Data Rows
+        $currentRow++;
+        $dataStartRow = $currentRow;
+        $totalLuas = 0;
+
+        foreach ($items as $index => $row) {
+            $luasVal = (float) ($row->LUAS ?? 0);
+            $totalLuas += $luasVal;
+
+            $sheet->setCellValue('A' . $currentRow, $index + 1);
+            $sheet->setCellValue('B' . $currentRow, $row->ALAMAT ?: '-');
+            $sheet->setCellValue('C' . $currentRow, $row->KEL ?: '-');
+            $sheet->setCellValue('D' . $currentRow, $row->KEC ?: '-');
+            $sheet->setCellValue('E' . $currentRow, $row->WAKIF ?: '-');
+            $sheet->setCellValue('F' . $currentRow, $row->NADZIR ?: '-');
+            $sheet->setCellValue('G' . $currentRow, $row->PENGGUNAAN ?: '-');
+            $sheet->setCellValue('H' . $currentRow, $luasVal);
+            $sheet->setCellValueExplicit('I' . $currentRow, $row->NO_AIW ?: '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('J' . $currentRow, $row->NO_SERT ?: '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+
+            // Row styling
+            $sheet->getStyle('A' . $currentRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('B' . $currentRow)->getAlignment()->setWrapText(true);
+            $sheet->getStyle('C' . $currentRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle('D' . $currentRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle('E' . $currentRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle('F' . $currentRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle('G' . $currentRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle('H' . $currentRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('I' . $currentRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('J' . $currentRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+            // Subtle zebra striping
+            if ($index % 2 === 1) {
+                $sheet->getStyle("A{$currentRow}:J{$currentRow}")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
+            }
+
+            $currentRow++;
+        }
+
+        $dataEndRow = $currentRow - 1;
+        $totalRow = $currentRow;
+
+        if ($dataEndRow >= $dataStartRow) {
+            $sheet->getStyle("H{$dataStartRow}:H{$dataEndRow}")->getNumberFormat()->setFormatCode('#,##0.00');
+            
+            // Total Row
+            $sheet->setCellValue('A' . $totalRow, 'TOTAL LUAS:');
+            $sheet->mergeCells("A{$totalRow}:G{$totalRow}");
+            $sheet->setCellValue('H' . $totalRow, "=SUM(H{$dataStartRow}:H{$dataEndRow})");
+            $sheet->setCellValue('I' . $totalRow, '-');
+            $sheet->setCellValue('J' . $totalRow, '-');
+        } else {
+            // Empty data
+            $sheet->setCellValue('A' . $totalRow, 'Tidak ada data aset wakaf yang sesuai dengan kriteria filter.');
+            $sheet->mergeCells("A{$totalRow}:J{$totalRow}");
+            $sheet->getStyle('A' . $totalRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('A' . $totalRow)->getFont()->setItalic(true);
+        }
+
+        // Styling Total Row
+        $sheet->getStyle("A{$totalRow}:J{$totalRow}")->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => '006400'],
+                'size' => 10,
+            ],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'F1F5F9'],
+            ],
+        ]);
+        $sheet->getStyle("A{$totalRow}:G{$totalRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle("H{$totalRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle("H{$totalRow}")->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle("I{$totalRow}:J{$totalRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getRowDimension($totalRow)->setRowHeight(22);
+
+        // Borders on entire table
+        $sheet->getStyle("A{$headerRow}:J{$totalRow}")->applyFromArray([
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color' => ['rgb' => 'CBD5E1'],
+                ],
+            ],
+        ]);
+
+        // Auto-size columns
+        foreach (['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'] as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        $sheet->getColumnDimension('B')->setWidth(30); // Alamat width
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        return response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    protected function exportManajemenPdf($items, $selectedLokasi, $filterInfo = null)
+    {
+        $locLabel = !empty($selectedLokasi['kabupaten']) ? \Illuminate\Support\Str::slug($selectedLokasi['kabupaten']['nama'], '_') : 'Wilayah';
+        $filename = "Daftar_Aset_Wakaf_" . $locLabel . "_" . date('Ymd_His') . ".pdf";
+
+        $title = "DAFTAR ASET WAKAF TANAH NAHDLATUL ULAMA";
+        if (!empty($selectedLokasi['kabupaten'])) {
+            $title .= " " . strtoupper($selectedLokasi['kabupaten']['nama']);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('lwp.dashboard.pdf_manajemen', compact(
+            'items',
+            'selectedLokasi',
+            'filterInfo',
+            'title'
+        ))->setPaper('a4', 'landscape');
+
+        return $pdf->download($filename);
+    }
+
     public function petaSebaran()
     {
         if ((int) Auth::guard('lwp')->user()->LEVEL !== 9) {

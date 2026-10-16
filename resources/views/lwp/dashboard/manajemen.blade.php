@@ -19,6 +19,12 @@
 
             @php
                 $hasActiveFilter = request()->filled('wakif') || request()->filled('penggunaan') || request()->filled('lokasi') || request()->filled('provinsi') || request()->filled('kabupaten') || request()->filled('kecamatan') || request()->filled('kelurahan');
+                $canExportInitial = false;
+                if (in_array($level, [3, 2])) {
+                    $canExportInitial = true;
+                } elseif (request()->filled('kabupaten') || request()->filled('kecamatan') || request()->filled('kelurahan')) {
+                    $canExportInitial = true;
+                }
             @endphp
             <!-- Filter Toggle -->
             <button id="toggleFilter" class="flex items-center gap-3 px-6 py-3.5 bg-white border rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all shadow-sm group {{ $hasActiveFilter ? 'bg-nu-green-50 text-nu-green-600 border-nu-green-200' : 'border-slate-100 text-slate-600 hover:border-nu-green-200 hover:text-nu-green-600' }}">
@@ -28,6 +34,22 @@
                     <span class="w-2 h-2 rounded-full bg-nu-green-600"></span>
                 @endif
             </button>
+
+            <!-- Export Buttons in Toolbar (Shown when Kab/Kota or lower is selected) -->
+            <div class="lwp-export-container {{ $canExportInitial ? 'flex' : 'hidden' }} items-center gap-2">
+                <a href="#" target="_blank" class="btn-export-pdf inline-flex items-center gap-2 px-5 py-3.5 bg-white border border-rose-200 text-rose-700 hover:bg-rose-50 hover:border-rose-300 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all shadow-sm group" title="Unduh data dalam format PDF">
+                    <svg class="w-4 h-4 text-rose-600 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Unduh PDF
+                </a>
+                <a href="#" target="_blank" class="btn-export-excel inline-flex items-center gap-2 px-5 py-3.5 bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all shadow-sm group" title="Unduh data dalam format Excel (.xlsx)">
+                    <svg class="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Unduh Excel
+                </a>
+            </div>
         </div>
 
         <button id="btnCreateWaqf" onclick="showCreateWaqf()" class="w-full lg:w-auto bg-nu-green-600 text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-nu-green-100 hover:bg-nu-green-700 transition-all flex items-center justify-center gap-3">
@@ -175,9 +197,31 @@
             </div>
 
             <!-- Buttons -->
-            <div class="flex justify-end gap-3 pt-2">
-                <button type="button" id="btnResetFilter" class="px-6 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all">Reset</button>
-                <button type="submit" class="px-8 py-3 bg-nu-green-600 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-nu-green-100 hover:bg-nu-green-700 transition-all">Terapkan Filter</button>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                <!-- Export Buttons inside Filter Box -->
+                <div class="lwp-export-container {{ $canExportInitial ? 'flex' : 'hidden' }} flex-wrap items-center gap-2">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-1 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-nu-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Unduh Hasil:
+                    </span>
+                    <a href="#" target="_blank" class="btn-export-pdf inline-flex items-center gap-2 px-4 py-3 bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 hover:border-rose-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm" title="Unduh PDF">
+                        <svg class="w-4 h-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Unduh PDF
+                    </a>
+                    <a href="#" target="_blank" class="btn-export-excel inline-flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm" title="Unduh Excel (.xlsx)">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Unduh Excel
+                    </a>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 ml-auto">
+                    <button type="button" id="btnResetFilter" class="px-6 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all">Reset</button>
+                    <button type="submit" class="px-8 py-3 bg-nu-green-600 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-nu-green-100 hover:bg-nu-green-700 transition-all">Terapkan Filter</button>
+                </div>
             </div>
         </form>
     </div>
@@ -1212,6 +1256,59 @@
             const selKec = document.getElementById('filter_kecamatan');
             const selKel = document.getElementById('filter_kelurahan');
 
+            // Dynamic Export Buttons Logic
+            function shouldShowExport() {
+                const userLevel = {{ (int) $level }};
+                if (userLevel === 3 || userLevel === 2) {
+                    return true; // Already scoped to Kab/Kota or Kecamatan
+                }
+
+                const hasKab = selKab && selKab.value !== '';
+                const hasKec = selKec && selKec.value !== '';
+                const hasKel = selKel && selKel.value !== '';
+
+                return Boolean(hasKab || hasKec || hasKel);
+            }
+
+            function updateExportButtons() {
+                const show = shouldShowExport();
+                const exportContainers = document.querySelectorAll('.lwp-export-container');
+
+                if (!show) {
+                    exportContainers.forEach(el => {
+                        el.classList.add('hidden');
+                        el.classList.remove('flex');
+                    });
+                    return;
+                }
+
+                exportContainers.forEach(el => {
+                    el.classList.remove('hidden');
+                    el.classList.add('flex');
+                });
+
+                const formData = new FormData(searchForm);
+                const params = new URLSearchParams();
+
+                for (const [k, v] of formData.entries()) {
+                    if (v && v.trim() !== '') {
+                        params.set(k, v.trim());
+                    }
+                }
+
+                const baseUrl = "{{ route('lwp.manajemen.export') }}";
+                const pdfBtns = document.querySelectorAll('.btn-export-pdf');
+                const excelBtns = document.querySelectorAll('.btn-export-excel');
+
+                params.set('format', 'pdf');
+                const pdfUrl = baseUrl + '?' + params.toString();
+                pdfBtns.forEach(btn => btn.setAttribute('href', pdfUrl));
+
+                params.set('format', 'excel');
+                const excelUrl = baseUrl + '?' + params.toString();
+                excelBtns.forEach(btn => btn.setAttribute('href', excelUrl));
+            }
+
             if (selProv) {
                 selProv.addEventListener('change', function() {
                     const provVal = this.value;
@@ -1226,6 +1323,7 @@
                         selKel.innerHTML = '<option value="">Semua Kelurahan</option>';
                         selKel.disabled = true;
                     }
+                    updateExportButtons();
                 });
             }
 
@@ -1239,6 +1337,7 @@
                         selKel.innerHTML = '<option value="">Semua Kelurahan</option>';
                         selKel.disabled = true;
                     }
+                    updateExportButtons();
                 });
             }
 
@@ -1248,8 +1347,19 @@
                     if (selKel) {
                         fetchFilterLokasi(kecVal, 'kel', selKel, 'Semua Kelurahan');
                     }
+                    updateExportButtons();
                 });
             }
+
+            if (selKel) {
+                selKel.addEventListener('change', function() {
+                    updateExportButtons();
+                });
+            }
+
+            searchForm.addEventListener('input', function() {
+                updateExportButtons();
+            });
 
             // Reset Filter Button Handler
             const btnReset = document.getElementById('btnResetFilter');
@@ -1291,6 +1401,8 @@
                         selKel.value = '';
                     }
 
+                    updateExportButtons();
+
                     currentManajemenPage = 1;
                     const targetUrl = "{{ route('lwp.manajemen') }}";
                     window.history.pushState({}, '', targetUrl);
@@ -1298,9 +1410,13 @@
                 });
             }
 
+            // Initial export button setup on page load
+            updateExportButtons();
+
             searchForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 currentManajemenPage = 1; // Reset to page 1 on new search
+                updateExportButtons();
                 window.refreshCurrentList();
             });
 

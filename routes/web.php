@@ -64,6 +64,7 @@ Route::prefix('lwp')->group(function() {
 
         Route::middleware(['lwp.not.level1'])->group(function() {
             Route::get('/manajemen-wakaf', [App\Http\Controllers\Lwp\DashboardController::class, 'manajemen'])->name('lwp.manajemen');
+            Route::get('/manajemen-wakaf/export', [App\Http\Controllers\Lwp\DashboardController::class, 'exportManajemenWakaf'])->name('lwp.manajemen.export');
             Route::get('/laporan', [App\Http\Controllers\Lwp\DashboardController::class, 'laporan'])->name('lwp.laporan');
             Route::get('/laporan/export', [App\Http\Controllers\Lwp\DashboardController::class, 'exportLaporan'])->name('lwp.laporan.export');
 
