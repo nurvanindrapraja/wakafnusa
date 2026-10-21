@@ -15,6 +15,9 @@
                     colors: {
                         'nu-green': { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#006400', 700: '#004d00' },
                         'nu-gold': { 50: '#fffbeb', 500: '#D4AF37', 600: '#B8860B' }
+                    },
+                    backgroundImage: {
+                        'gradient-nu': 'linear-gradient(135deg, #006400 0%, #004000 50%, #003000 100%)'
                     }
                 }
             }
@@ -87,6 +90,10 @@
             <a href="{{ route('lwp.lokasi.index') }}" class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all group {{ str_contains($currentRoute ?? '', 'lwp.lokasi') ? 'bg-nu-green-50 text-nu-green-700 font-black' : 'text-slate-400 hover:bg-slate-50 hover:text-nu-green-600' }}">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 Master Lokasi
+            </a>
+            <a href="{{ route('lwp.import-wakaf.index') }}" class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all group {{ str_contains($currentRoute ?? '', 'lwp.import-wakaf') ? 'bg-nu-green-50 text-nu-green-700 font-black' : 'text-slate-400 hover:bg-slate-50 hover:text-nu-green-600' }}">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" /></svg>
+                Import Data Wakaf
             </a>
             @endif
             @if(in_array((int)Auth::guard('lwp')->user()->LEVEL, [9, 91, 31, 3]))

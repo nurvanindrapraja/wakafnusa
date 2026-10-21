@@ -118,6 +118,16 @@ Route::prefix('lwp')->group(function() {
                 Route::delete('/{kode_lokasi}', [App\Http\Controllers\Lwp\LokasiController::class, 'destroy'])->name('destroy');
             });
 
+            // Import Data Wakaf Routes (Hanya Admin PBNU [91] atau Admin APP [9])
+            Route::prefix('import-wakaf')->name('lwp.import-wakaf.')->group(function() {
+                Route::get('/', [App\Http\Controllers\Lwp\ImportWakafController::class, 'index'])->name('index');
+                Route::get('/download-template', [App\Http\Controllers\Lwp\ImportWakafController::class, 'downloadTemplate'])->name('download-template');
+                Route::post('/upload', [App\Http\Controllers\Lwp\ImportWakafController::class, 'upload'])->name('upload');
+                Route::post('/generate', [App\Http\Controllers\Lwp\ImportWakafController::class, 'generate'])->name('generate');
+                Route::post('/process', [App\Http\Controllers\Lwp\ImportWakafController::class, 'process'])->name('process');
+                Route::post('/cancel', [App\Http\Controllers\Lwp\ImportWakafController::class, 'cancel'])->name('cancel');
+            });
+
             // Trash Routes
             Route::get('/data-sampah', [App\Http\Controllers\Lwp\DashboardController::class, 'trash'])->name('lwp.trash');
             Route::post('/data-sampah/wakaf/{id}/restore', [App\Http\Controllers\Lwp\DashboardController::class, 'restoreWakaf'])->name('lwp.trash.wakaf.restore');
