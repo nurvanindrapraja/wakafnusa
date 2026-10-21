@@ -79,6 +79,12 @@
                 Data Pengguna
             </a>
             @endif
+            @if(in_array((int)Auth::guard('lwp')->user()->LEVEL, [9, 91]))
+            <a href="{{ route('lwp.penggunaan.index') }}" class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all group {{ str_contains($currentRoute ?? '', 'lwp.penggunaan') ? 'bg-nu-green-50 text-nu-green-700 font-black' : 'text-slate-400 hover:bg-slate-50 hover:text-nu-green-600' }}">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                Master Penggunaan
+            </a>
+            @endif
             @if(in_array((int)Auth::guard('lwp')->user()->LEVEL, [9, 91, 31, 3]))
             <a href="{{ route('lwp.trash') }}" class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all group {{ $currentRoute == 'lwp.trash' ? 'bg-nu-green-50 text-nu-green-700 font-black' : 'text-slate-400 hover:bg-slate-50 hover:text-nu-green-600' }}">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -178,9 +184,9 @@
             progressBar.style.transform = 'scaleX(0)';
             setTimeout(() => { progressBar.style.transform = 'scaleX(0.4)'; }, 50);
             setTimeout(() => { progressBar.style.transform = 'scaleX(0.75)'; }, 350);
-            setTimeout(() => { progressBar.style.transform = 'scaleX(0.9)'; }, 1000);
         }
     </script>
     @yield('scripts')
+    @stack('scripts')
 </body>
 </html>

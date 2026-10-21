@@ -13,6 +13,41 @@ class Usage extends Model
     protected $keyType = 'string';
     public $timestamps = false;
 
+    protected $fillable = [
+        'KODE_PENG',
+        'PENGGUNAAN',
+        'KODE_PENG_OLD',
+        'ICON',
+        'ISDEL',
+    ];
+
+    /**
+     * Scope for active records
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('ISDEL', 0);
+    }
+
+    /**
+     * Check if this is a parent category
+     */
+    public function isParent(): bool
+    {
+        return !str_contains($this->KODE_PENG, '.');
+    }
+
+    /**
+     * Get parent category code
+     */
+    public function getParentCodeAttribute(): ?string
+    {
+        if (str_contains($this->KODE_PENG, '.')) {
+            return explode('.', $this->KODE_PENG)[0];
+        }
+        return null;
+    }
+
     /**
      * Get the current connection name for the model.
      *

@@ -98,6 +98,16 @@ Route::prefix('lwp')->group(function() {
             Route::post('/users/{id}/reset-password', [App\Http\Controllers\Lwp\UserController::class, 'resetPassword'])->name('lwp.users.reset-password');
             Route::get('/cabang-helper', [App\Http\Controllers\Lwp\UserController::class, 'getCabang'])->name('lwp.cabang-helper');
 
+            // Master Penggunaan Routes (Hanya Admin PBNU [91] atau Admin APP [9])
+            Route::prefix('master-penggunaan')->name('lwp.penggunaan.')->group(function() {
+                Route::get('/', [App\Http\Controllers\Lwp\PenggunaanController::class, 'index'])->name('index');
+                Route::post('/', [App\Http\Controllers\Lwp\PenggunaanController::class, 'store'])->name('store');
+                Route::get('/{kode_peng}', [App\Http\Controllers\Lwp\PenggunaanController::class, 'show'])->name('show');
+                Route::post('/{kode_peng}/update', [App\Http\Controllers\Lwp\PenggunaanController::class, 'update'])->name('update');
+                Route::delete('/{kode_peng}', [App\Http\Controllers\Lwp\PenggunaanController::class, 'destroy'])->name('destroy');
+                Route::post('/{kode_peng}/restore', [App\Http\Controllers\Lwp\PenggunaanController::class, 'restore'])->name('restore');
+            });
+
             // Trash Routes
             Route::get('/data-sampah', [App\Http\Controllers\Lwp\DashboardController::class, 'trash'])->name('lwp.trash');
             Route::post('/data-sampah/wakaf/{id}/restore', [App\Http\Controllers\Lwp\DashboardController::class, 'restoreWakaf'])->name('lwp.trash.wakaf.restore');
