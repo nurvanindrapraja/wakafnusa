@@ -108,6 +108,16 @@ Route::prefix('lwp')->group(function() {
                 Route::post('/{kode_peng}/restore', [App\Http\Controllers\Lwp\PenggunaanController::class, 'restore'])->name('restore');
             });
 
+            // Master Lokasi Routes (Hanya Admin PBNU [91] atau Admin APP [9])
+            Route::prefix('master-lokasi')->name('lwp.lokasi.')->group(function() {
+                Route::get('/', [App\Http\Controllers\Lwp\LokasiController::class, 'index'])->name('index');
+                Route::post('/', [App\Http\Controllers\Lwp\LokasiController::class, 'store'])->name('store');
+                Route::get('/suggest-code', [App\Http\Controllers\Lwp\LokasiController::class, 'suggestCode'])->name('suggest-code');
+                Route::get('/{kode_lokasi}', [App\Http\Controllers\Lwp\LokasiController::class, 'show'])->name('show');
+                Route::post('/{kode_lokasi}/update', [App\Http\Controllers\Lwp\LokasiController::class, 'update'])->name('update');
+                Route::delete('/{kode_lokasi}', [App\Http\Controllers\Lwp\LokasiController::class, 'destroy'])->name('destroy');
+            });
+
             // Trash Routes
             Route::get('/data-sampah', [App\Http\Controllers\Lwp\DashboardController::class, 'trash'])->name('lwp.trash');
             Route::post('/data-sampah/wakaf/{id}/restore', [App\Http\Controllers\Lwp\DashboardController::class, 'restoreWakaf'])->name('lwp.trash.wakaf.restore');
