@@ -198,4 +198,28 @@ class MasterPenggunaanTest extends TestCase
             'KODE_PENG' => '11.02',
         ]);
     }
+
+    public function test_master_penggunaan_renders_mobile_card_view()
+    {
+        $admin = LwpUser::create([
+            'NAMA_USER' => 'Admin PBNU',
+            'USERNAME_USER' => 'admin_pbnu',
+            'EMAIL_USER' => 'admin@pbnu.or.id',
+            'PASSWORD_USER' => sha1('secret'),
+            'LEVEL' => 9,
+            'ISDEL' => 0,
+        ]);
+
+        $response = $this->actingAs($admin, 'lwp')->get(route('lwp.penggunaan.index'));
+        $response->assertStatus(200);
+
+        // Verify Desktop Table & Mobile Card View containers exist
+        $response->assertSee('hidden md:block overflow-x-auto', false);
+        $response->assertSee('block md:hidden divide-y divide-slate-100', false);
+
+        // Verify Cards rendered for usages
+        $response->assertSee('card-penggunaan-11', false);
+        $response->assertSee('card-penggunaan-11_01', false);
+    }
 }
+

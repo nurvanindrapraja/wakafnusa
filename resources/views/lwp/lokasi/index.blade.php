@@ -70,7 +70,7 @@
         <div id="lokasiProgressBar" class="absolute top-0 left-0 right-0 h-1 bg-nu-green-500 transition-all duration-300 transform scale-x-0 origin-left z-20"></div>
 
         <!-- Toolbar Filters -->
-        <div class="px-8 py-6 border-b border-slate-50 space-y-4">
+        <div class="p-4 sm:px-8 sm:py-6 border-b border-slate-50 space-y-4">
             <!-- Top Line: Search & Add Button -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <!-- Search Input -->
@@ -85,12 +85,12 @@
                 </div>
 
                 <!-- Right Action Buttons -->
-                <div class="flex items-center gap-3">
-                    <button type="button" onclick="resetAllLokasiFilters()" class="px-4 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold transition-colors flex items-center gap-2">
+                <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                    <button type="button" onclick="resetAllLokasiFilters()" class="flex-1 sm:flex-none justify-center px-4 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold transition-colors flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                         Reset Filter
                     </button>
-                    <button type="button" onclick="openCreateLokasiModal()" class="px-5 py-3 bg-nu-green-600 hover:bg-nu-green-700 text-white rounded-2xl text-xs font-black transition-all flex items-center gap-2 shadow-lg shadow-nu-green-600/20 shrink-0">
+                    <button type="button" onclick="openCreateLokasiModal()" class="flex-1 sm:flex-none justify-center px-5 py-3 bg-nu-green-600 hover:bg-nu-green-700 text-white rounded-2xl text-xs font-black transition-all flex items-center gap-2 shadow-lg shadow-nu-green-600/20 shrink-0">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                         Tambah Lokasi
                     </button>

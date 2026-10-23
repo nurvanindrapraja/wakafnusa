@@ -20,13 +20,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ImportWakafController extends Controller
 {
     /**
-     * Check if current user is Admin APP (9) or Admin PBNU (91)
+     * Check if current user is Admin APP (9), Admin PBNU (91), Admin PWNU (31), or Admin PCNU (3)
      */
     private function checkPermission()
     {
         $user = Auth::guard('lwp')->user();
-        if (!$user || !in_array((int)$user->LEVEL, [9, 91])) {
-            abort(403, 'Akses Terbatas: Hanya Admin PBNU atau Admin APP yang dapat mengimpor data wakaf.');
+        if (!$user || !in_array((int)$user->LEVEL, [9, 91, 31, 3])) {
+            abort(403, 'Akses Terbatas: Hanya Admin PBNU, Admin PWNU, Admin PCNU, atau Admin APP yang dapat mengakses menu import data wakaf.');
         }
     }
 
@@ -273,7 +273,8 @@ class ImportWakafController extends Controller
         $dominantKabName = !empty($kabCountMap) ? array_key_first($kabCountMap) : null;
 
         // Calculate suggested starting NIA from wk_wakaf
-        $suggestedNia = $this->determineSuggestedNia($dominantKabName);
+        $user = Auth::guard('lwp')->user();
+        $suggestedNia = $this->determineSuggestedNia($dominantKabName, $user);
 
         // Store into session
         session()->put('import_wakaf_session', [
@@ -332,6 +333,12 @@ class ImportWakafController extends Controller
             'desas' => [],
         ];
 
+        $user = Auth::guard('lwp')->user();
+        $userLevel = (int)($user ? $user->LEVEL : 0);
+        $userLoc = $user ? (string)$user->KODE_LOKASI : '';
+        $provPrefix = ($userLevel === 31 && strlen($userLoc) >= 2) ? substr($userLoc, 0, 2) : null;
+        $kabPrefix = ($userLevel === 3 && strlen($userLoc) >= 5) ? substr($userLoc, 0, 5) : null;
+
         $currentNia = $startingNiaInt;
         $readyCount = 0;
         $incompleteCount = 0;
@@ -349,10 +356,17 @@ class ImportWakafController extends Controller
             $currentNia++;
 
             // 2. Map Kode Lokasi
-            $locResult = $this->resolveLocation($r['desa'], $r['kecamatan'], $r['kabupaten'], $r['provinsi'], $locationCache);
+            $locResult = $this->resolveLocation($r['desa'], $r['kecamatan'], $r['kabupaten'], $r['provinsi'], $locationCache, $provPrefix, $kabPrefix);
             if ($locResult) {
                 $r['kode_lokasi'] = $locResult['kode_lokasi'];
                 $r['nama_lokasi'] = $locResult['nama_lokasi'];
+
+                // Validate regional jurisdiction for PCNU & PWNU
+                if ($kabPrefix && !str_starts_with($locResult['kode_lokasi'], $kabPrefix)) {
+                    $errors[] = "Lokasi di luar wilayah PCNU Anda ({$kabPrefix}).";
+                } elseif ($provPrefix && !str_starts_with($locResult['kode_lokasi'], $provPrefix)) {
+                    $errors[] = "Lokasi di luar wilayah PWNU Anda ({$provPrefix}).";
+                }
             } else {
                 $r['kode_lokasi'] = null;
                 $r['nama_lokasi'] = null;
@@ -371,7 +385,7 @@ class ImportWakafController extends Controller
             }
 
             // 4. Validate completeness
-            if (!empty($r['nia']) && !empty($r['kode_lokasi']) && !empty($r['kode_peng'])) {
+            if (empty($errors) && !empty($r['nia']) && !empty($r['kode_lokasi']) && !empty($r['kode_peng'])) {
                 $r['status'] = 'ready';
                 $r['errors'] = [];
                 $readyCount++;
@@ -424,9 +438,27 @@ class ImportWakafController extends Controller
 
         $rows = $sessionData['rows'];
 
-        // Filter only ready rows (NIA, kode_lokasi, and kode_peng must be present)
-        $readyRows = array_filter($rows, function ($r) {
-            return !empty($r['nia']) && !empty($r['kode_lokasi']) && !empty($r['kode_peng']);
+        $user = Auth::guard('lwp')->user();
+        $userLevel = (int)($user ? $user->LEVEL : 0);
+        $userLoc = $user ? (string)$user->KODE_LOKASI : '';
+        $provPrefix = ($userLevel === 31 && strlen($userLoc) >= 2) ? substr($userLoc, 0, 2) : null;
+        $kabPrefix = ($userLevel === 3 && strlen($userLoc) >= 5) ? substr($userLoc, 0, 5) : null;
+
+        // Filter only ready rows (status ready, no errors, within jurisdiction, and all 3 codes populated)
+        $readyRows = array_filter($rows, function ($r) use ($provPrefix, $kabPrefix) {
+            if (($r['status'] ?? '') !== 'ready' || !empty($r['errors'])) {
+                return false;
+            }
+            if (empty($r['nia']) || empty($r['kode_lokasi']) || empty($r['kode_peng'])) {
+                return false;
+            }
+            if ($kabPrefix && !str_starts_with($r['kode_lokasi'], $kabPrefix)) {
+                return false;
+            }
+            if ($provPrefix && !str_starts_with($r['kode_lokasi'], $provPrefix)) {
+                return false;
+            }
+            return true;
         });
 
         if (empty($readyRows)) {
@@ -618,10 +650,22 @@ class ImportWakafController extends Controller
     /**
      * Determine suggested starting NIA
      */
-    private function determineSuggestedNia(?string $dominantKabName): string
+    private function determineSuggestedNia(?string $dominantKabName, $user = null): string
     {
         $connection = 'mysql_no_prefix';
         $driver = DB::connection($connection)->getDriverName();
+
+        $userLevel = (int)($user ? $user->LEVEL : 0);
+        $userLoc = $user ? (string)$user->KODE_LOKASI : '';
+
+        // If no dominant kab from excel, but user is PCNU (3) with location code (e.g. 35.22)
+        if (!$dominantKabName && $userLevel === 3 && strlen($userLoc) >= 5) {
+            $userKabPrefix = substr($userLoc, 0, 5);
+            $userKabLoc = Location::where('kode_lokasi', $userKabPrefix)->first();
+            if ($userKabLoc) {
+                $dominantKabName = $userKabLoc->nama_lokasi;
+            }
+        }
 
         // 1. Try finding max NIA in the dominant kabupaten if available
         if ($dominantKabName) {
@@ -681,7 +725,7 @@ class ImportWakafController extends Controller
     /**
      * Resolve Location hierarchically (Prov -> Kab -> Kec -> Desa)
      */
-    private function resolveLocation(?string $desa, ?string $kec, ?string $kab, ?string $prov, array &$cache): ?array
+    private function resolveLocation(?string $desa, ?string $kec, ?string $kab, ?string $prov, array &$cache, ?string $defaultProv = null, ?string $defaultKab = null): ?array
     {
         $clean = function ($s) {
             if (!$s) return '';
@@ -704,8 +748,8 @@ class ImportWakafController extends Controller
             if ($pObj) $provCode = $pObj->kode_lokasi;
         }
         if (!$provCode) {
-            // Default to 35 (Jawa Timur) if not specified or unmapped
-            $provCode = '35';
+            // Default to user's province or 35 (Jawa Timur)
+            $provCode = $defaultProv ?: '35';
         }
 
         // 2. Resolve Kabupaten
@@ -716,6 +760,9 @@ class ImportWakafController extends Controller
             }
             $kObj = $cache['kabupatens'][$provCode]->first(fn($k) => $clean($k->nama_lokasi) === $cKab);
             if ($kObj) $kabCode = $kObj->kode_lokasi;
+        }
+        if (!$kabCode && $defaultKab && str_starts_with($defaultKab, $provCode)) {
+            $kabCode = $defaultKab;
         }
 
         // 3. Resolve Kecamatan

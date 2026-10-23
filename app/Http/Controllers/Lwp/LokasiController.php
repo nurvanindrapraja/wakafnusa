@@ -168,7 +168,7 @@ class LokasiController extends Controller
             return response()->json([
                 'status' => 'success',
                 'html' => view('lwp.lokasi.partials._table', compact('locations'))->render(),
-                'pagination' => (string) $locations->links(),
+                'pagination' => (string) $locations->links('lwp.lokasi.partials._pagination'),
                 'total' => $locations->total(),
             ]);
         }

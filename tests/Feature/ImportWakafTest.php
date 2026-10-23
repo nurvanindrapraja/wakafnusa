@@ -112,6 +112,9 @@ class ImportWakafTest extends TestCase
             ['kode_lokasi' => '35.22', 'nama_lokasi' => 'KAB. BOJONEGORO'],
             ['kode_lokasi' => '35.22.15', 'nama_lokasi' => 'BOJONEGORO'],
             ['kode_lokasi' => '35.22.15.1011', 'nama_lokasi' => 'KADIPATEN'],
+            ['kode_lokasi' => '35.23', 'nama_lokasi' => 'KAB. TUBAN'],
+            ['kode_lokasi' => '35.23.01', 'nama_lokasi' => 'TUBAN'],
+            ['kode_lokasi' => '35.23.01.1001', 'nama_lokasi' => 'KUTOREJO'],
         ]);
 
         DB::table('wk_penggunaan')->insert([
@@ -138,19 +141,28 @@ class ImportWakafTest extends TestCase
         $response->assertRedirect(route('lwp.login'));
     }
 
-    public function test_non_admin_cannot_access_import_wakaf()
+    public function test_level_1_and_level_2_cannot_access_import_wakaf()
     {
-        $moderator = LwpUser::create([
-            'NAMA_USER' => 'Test Mod PWNU',
-            'USERNAME_USER' => 'testmod_pwnu',
-            'EMAIL_USER' => 'testmod@example.com',
+        $rantingUser = LwpUser::create([
+            'NAMA_USER' => 'Test Ranting',
+            'USERNAME_USER' => 'test_ranting',
+            'EMAIL_USER' => 'ranting@example.com',
             'PASSWORD_USER' => sha1('secret'),
-            'LEVEL' => 31,
+            'LEVEL' => 1,
             'ISDEL' => 0,
         ]);
 
-        $response = $this->actingAs($moderator, 'lwp')->get(route('lwp.import-wakaf.index'));
-        $response->assertStatus(403);
+        $mwcUser = LwpUser::create([
+            'NAMA_USER' => 'Test MWCNU',
+            'USERNAME_USER' => 'test_mwc',
+            'EMAIL_USER' => 'mwc@example.com',
+            'PASSWORD_USER' => sha1('secret'),
+            'LEVEL' => 2,
+            'ISDEL' => 0,
+        ]);
+
+        $this->actingAs($rantingUser, 'lwp')->get(route('lwp.import-wakaf.index'))->assertStatus(403);
+        $this->actingAs($mwcUser, 'lwp')->get(route('lwp.import-wakaf.index'))->assertStatus(403);
     }
 
     public function test_admin_app_level_9_can_access()
@@ -182,6 +194,40 @@ class ImportWakafTest extends TestCase
         ]);
 
         $response = $this->actingAs($pbnu, 'lwp')->get(route('lwp.import-wakaf.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Import Data Wakaf');
+    }
+
+    public function test_admin_pwnu_level_31_can_access()
+    {
+        $pwnu = LwpUser::create([
+            'NAMA_USER' => 'Admin PWNU Jatim',
+            'USERNAME_USER' => 'admin_pwnu',
+            'EMAIL_USER' => 'pwnu@example.com',
+            'PASSWORD_USER' => sha1('secret'),
+            'LEVEL' => 31,
+            'KODE_LOKASI' => '35',
+            'ISDEL' => 0,
+        ]);
+
+        $response = $this->actingAs($pwnu, 'lwp')->get(route('lwp.import-wakaf.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Import Data Wakaf');
+    }
+
+    public function test_admin_pcnu_level_3_can_access()
+    {
+        $pcnu = LwpUser::create([
+            'NAMA_USER' => 'Admin PCNU Bojonegoro',
+            'USERNAME_USER' => 'admin_pcnu',
+            'EMAIL_USER' => 'pcnu@example.com',
+            'PASSWORD_USER' => sha1('secret'),
+            'LEVEL' => 3,
+            'KODE_LOKASI' => '35.22',
+            'ISDEL' => 0,
+        ]);
+
+        $response = $this->actingAs($pcnu, 'lwp')->get(route('lwp.import-wakaf.index'));
         $response->assertStatus(200);
         $response->assertSee('Import Data Wakaf');
     }
@@ -356,6 +402,139 @@ class ImportWakafTest extends TestCase
         $this->assertEquals('SUKOREJO', $sessionData['rows'][0]['desa']);
         $this->assertEquals('BOJONEGORO', $sessionData['rows'][0]['kecamatan']);
         $this->assertEquals('H. Nurvan', $sessionData['rows'][0]['wakif']);
+
+        if (file_exists($tempPath)) {
+            unlink($tempPath);
+        }
+    }
+
+    public function test_pcnu_can_import_within_assigned_kabupaten(): void
+    {
+        $pcnu = LwpUser::create([
+            'NAMA_USER' => 'Admin PCNU Bojonegoro',
+            'USERNAME_USER' => 'pcnu_bojonegoro',
+            'EMAIL_USER' => 'pcnubjn@example.com',
+            'PASSWORD_USER' => sha1('secret'),
+            'LEVEL' => 3,
+            'KODE_LOKASI' => '35.22',
+            'ISDEL' => 0,
+        ]);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $headers = [
+            'kel/desa', 'kec', 'kota/kab', 'provinsi', 'penggunaan',
+            'nama', 'alamat', 'wakif', 'nazhir', 'luas',
+            'no aiw', 'tgl aiw', 'no sert/nib', 'tgl sertipikat', 'keterangan', 'njop'
+        ];
+        $sheet->fromArray([$headers], null, 'A1');
+        $sheet->fromArray([[
+            'KADIPATEN', 'BOJONEGORO', 'KAB. BOJONEGORO', 'JAWA TIMUR', 'MASJID',
+            'Masjid PCNU Bjn', 'Jl. Panglima Polim', 'H. PCNU', 'MWC NU', 800,
+            'AIW-PCNU-01', '2023-01-01', 'SERT-PCNU-01', '2023-02-01', 'Wakaf PCNU', 200000000
+        ]], null, 'A2');
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'test_pcnu_') . '.xlsx';
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        $uploadedFile = new UploadedFile($tempPath, 'test_pcnu.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        // Upload
+        $this->actingAs($pcnu, 'lwp')->postJson(route('lwp.import-wakaf.upload'), [
+            'file' => $uploadedFile,
+        ])->assertStatus(200);
+
+        // Generate
+        $genResponse = $this->actingAs($pcnu, 'lwp')->postJson(route('lwp.import-wakaf.generate'), [
+            'starting_nia' => '1614000500',
+        ]);
+        $genResponse->assertStatus(200);
+        $genResponse->assertJson([
+            'status' => 'success',
+            'stats' => [
+                'ready' => 1,
+                'incomplete' => 0,
+            ]
+        ]);
+
+        // Process Import
+        $procResponse = $this->actingAs($pcnu, 'lwp')->postJson(route('lwp.import-wakaf.process'));
+        $procResponse->assertStatus(200);
+        $procResponse->assertJson([
+            'status' => 'success',
+            'imported_count' => 1,
+        ]);
+
+        $this->assertDatabaseHas('wk_wakaf', [
+            'NIA' => '1614000500',
+            'KODE_LOKASI' => '35.22.15.1011',
+            'NAMA' => 'Masjid PCNU Bjn',
+        ]);
+
+        if (file_exists($tempPath)) {
+            unlink($tempPath);
+        }
+    }
+
+    public function test_pcnu_cannot_import_data_outside_assigned_kabupaten(): void
+    {
+        $pcnuBjn = LwpUser::create([
+            'NAMA_USER' => 'Admin PCNU Bojonegoro 2',
+            'USERNAME_USER' => 'pcnu_bojonegoro_2',
+            'EMAIL_USER' => 'pcnubjn2@example.com',
+            'PASSWORD_USER' => sha1('secret'),
+            'LEVEL' => 3,
+            'KODE_LOKASI' => '35.22', // Bojonegoro
+            'ISDEL' => 0,
+        ]);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $headers = [
+            'kel/desa', 'kec', 'kota/kab', 'provinsi', 'penggunaan',
+            'nama', 'alamat', 'wakif', 'nazhir', 'luas',
+            'no aiw', 'tgl aiw', 'no sert/nib', 'tgl sertipikat', 'keterangan', 'njop'
+        ];
+        $sheet->fromArray([$headers], null, 'A1');
+        // KUTOREJO, TUBAN, KAB. TUBAN is outside 35.22
+        $sheet->fromArray([[
+            'KUTOREJO', 'TUBAN', 'KAB. TUBAN', 'JAWA TIMUR', 'MASJID',
+            'Masjid Luar Wilayah', 'Jl. Tuban', 'H. Luar', 'MWC', 500,
+            'AIW-OUT-01', '2023-01-01', 'SERT-OUT-01', '2023-02-01', 'Wakaf Luar', 100000000
+        ]], null, 'A2');
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'test_out_') . '.xlsx';
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        $uploadedFile = new UploadedFile($tempPath, 'test_out.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        // Upload
+        $this->actingAs($pcnuBjn, 'lwp')->postJson(route('lwp.import-wakaf.upload'), [
+            'file' => $uploadedFile,
+        ])->assertStatus(200);
+
+        // Generate
+        $genResponse = $this->actingAs($pcnuBjn, 'lwp')->postJson(route('lwp.import-wakaf.generate'), [
+            'starting_nia' => '1614000999',
+        ]);
+        $genResponse->assertStatus(200);
+        $genResponse->assertJson([
+            'status' => 'success',
+            'stats' => [
+                'ready' => 0,
+                'incomplete' => 1,
+            ]
+        ]);
+
+        $sessionData = session('import_wakaf_session');
+        $this->assertEquals('incomplete', $sessionData['rows'][0]['status']);
+        $this->assertStringContainsString('di luar wilayah PCNU Anda', $sessionData['rows'][0]['errors'][0]);
+
+        // Attempting to process should fail because 0 ready rows
+        $procResponse = $this->actingAs($pcnuBjn, 'lwp')->postJson(route('lwp.import-wakaf.process'));
+        $procResponse->assertStatus(422);
 
         if (file_exists($tempPath)) {
             unlink($tempPath);

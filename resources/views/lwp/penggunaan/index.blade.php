@@ -61,7 +61,7 @@
         <div id="usageProgressBar" class="absolute top-0 left-0 right-0 h-1 bg-nu-green-500 transition-all duration-300 transform scale-x-0 origin-left z-20"></div>
 
         <!-- Toolbar Filters -->
-        <div class="px-8 py-6 border-b border-slate-50 space-y-4">
+        <div class="p-4 sm:px-8 sm:py-6 border-b border-slate-50 space-y-4">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <!-- Left Filters Group -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center flex-1 gap-3">
@@ -248,7 +248,7 @@
         applyFilters();
     }
 
-    function applyFilters() {
+    function applyFilters(page = null) {
         const search = document.getElementById('searchUsage').value;
         const kategori = document.getElementById('filterKategori').value;
         const status = document.getElementById('filterStatus').value;
@@ -260,6 +260,10 @@
             kategori: kategori,
             status: status
         });
+
+        if (page) {
+            params.set('page', page);
+        }
 
         // Update URL query string without full page reload
         window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
@@ -279,6 +283,35 @@
         })
         .finally(() => {
             setProgressBar(false);
+        });
+    }
+
+    // Intercept pagination clicks for AJAX navigation
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('.penggunaan-pagination-wrapper a');
+        if (link) {
+            e.preventDefault();
+            const url = new URL(link.href);
+            const page = url.searchParams.get('page') || 1;
+            applyFilters(page);
+        }
+    });
+
+    function copyToClipboard(text) {
+        if (!navigator.clipboard) {
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            showToast(`Kode '${text}' berhasil disalin ke clipboard!`, 'info');
+            return;
+        }
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(`Kode '${text}' berhasil disalin ke clipboard!`, 'info');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
         });
     }
 

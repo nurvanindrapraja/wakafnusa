@@ -219,4 +219,28 @@ class MasterLokasiTest extends TestCase
             'kode_lokasi' => '35.22.01.2002',
         ]);
     }
+
+    public function test_master_lokasi_renders_mobile_card_view_and_icon_pagination()
+    {
+        $admin = LwpUser::create([
+            'NAMA_USER' => 'Admin PBNU',
+            'USERNAME_USER' => 'admin_pbnu',
+            'EMAIL_USER' => 'admin@pbnu.or.id',
+            'PASSWORD_USER' => sha1('secret'),
+            'LEVEL' => 9,
+            'ISDEL' => 0,
+        ]);
+
+        $response = $this->actingAs($admin, 'lwp')->get(route('lwp.lokasi.index'));
+        $response->assertStatus(200);
+
+        // Verify Desktop Table & Mobile Card View containers exist
+        $response->assertSee('hidden md:block overflow-x-auto', false);
+        $response->assertSee('block md:hidden divide-y divide-slate-100', false);
+
+        // Verify Card content rendered for locations
+        $response->assertSee('card-lokasi-35', false);
+        $response->assertSee('card-lokasi-35_22_01_2001', false);
+    }
 }
+
