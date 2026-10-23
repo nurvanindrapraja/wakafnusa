@@ -102,7 +102,7 @@
                 <!-- Filter Tingkat -->
                 <div>
                     <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Tingkat Wilayah</label>
-                    <select id="filterLokasiLevel" onchange="applyLokasiFilters()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-nu-green-500 focus:bg-white transition-all">
+                    <select id="filterLokasiLevel" onchange="applyLokasiFilters(1)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-nu-green-500 focus:bg-white transition-all">
                         <option value="">Semua Tingkat</option>
                         <option value="provinsi" {{ $level == 'provinsi' ? 'selected' : '' }}>Provinsi (2 digit)</option>
                         <option value="kabupaten" {{ $level == 'kabupaten' ? 'selected' : '' }}>Kabupaten / Kota (5 digit)</option>
@@ -140,7 +140,7 @@
                 <!-- Filter Kecamatan -->
                 <div>
                     <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Kecamatan</label>
-                    <select id="filterLokasiKec" onchange="applyLokasiFilters()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-nu-green-500 focus:bg-white transition-all {{ $filterKab ? '' : 'opacity-60' }}" {{ $filterKab ? '' : 'disabled' }}>
+                    <select id="filterLokasiKec" onchange="applyLokasiFilters(1)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-nu-green-500 focus:bg-white transition-all {{ $filterKab ? '' : 'opacity-60' }}" {{ $filterKab ? '' : 'disabled' }}>
                         <option value="">Semua Kecamatan</option>
                         @foreach($kecamatans as $kc)
                             <option value="{{ $kc->kode_lokasi }}" {{ $filterKec == $kc->kode_lokasi ? 'selected' : '' }}>
@@ -219,7 +219,7 @@
 
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            applyLokasiFilters();
+            applyLokasiFilters(1);
         }, 400);
     });
 
@@ -227,7 +227,7 @@
         const input = document.getElementById('searchLokasi');
         input.value = '';
         document.getElementById('clearLokasiSearch').classList.add('hidden');
-        applyLokasiFilters();
+        applyLokasiFilters(1);
     }
 
     function resetAllLokasiFilters() {
@@ -246,7 +246,7 @@
         kecSel.disabled = true;
         kecSel.classList.add('opacity-60');
 
-        applyLokasiFilters();
+        applyLokasiFilters(1);
     }
 
     // Cascading Dropdown: Prov changed
@@ -263,7 +263,7 @@
         if (!provCode) {
             kabSel.disabled = true;
             kabSel.classList.add('opacity-60');
-            applyLokasiFilters();
+            applyLokasiFilters(1);
             return;
         }
 
@@ -279,11 +279,11 @@
                     options += `<option value="${item.kode_lokasi}">${item.nama_lokasi}</option>`;
                 });
                 kabSel.innerHTML = options;
-                applyLokasiFilters();
+                applyLokasiFilters(1);
             })
             .catch(() => {
                 kabSel.innerHTML = '<option value="">Gagal memuat data</option>';
-                applyLokasiFilters();
+                applyLokasiFilters(1);
             });
     }
 
@@ -297,7 +297,7 @@
         if (!kabCode) {
             kecSel.disabled = true;
             kecSel.classList.add('opacity-60');
-            applyLokasiFilters();
+            applyLokasiFilters(1);
             return;
         }
 
@@ -313,16 +313,24 @@
                     options += `<option value="${item.kode_lokasi}">${item.nama_lokasi}</option>`;
                 });
                 kecSel.innerHTML = options;
-                applyLokasiFilters();
+                applyLokasiFilters(1);
             })
             .catch(() => {
                 kecSel.innerHTML = '<option value="">Gagal memuat data</option>';
-                applyLokasiFilters();
+                applyLokasiFilters(1);
             });
     }
 
+    let currentLokasiPage = {{ $locations->currentPage() }};
+
     // Core AJAX Filter Fetcher
-    function applyLokasiFilters(page = 1) {
+    function applyLokasiFilters(page = null) {
+        if (page !== null && page !== undefined) {
+            currentLokasiPage = parseInt(page);
+        } else {
+            page = currentLokasiPage;
+        }
+
         setProgressBar(0.3);
 
         const search = document.getElementById('searchLokasi')?.value || '';
@@ -693,7 +701,7 @@
             if (res.status === 200 && res.body.status === 'success') {
                 closeEditLokasiModal();
                 showToast(res.body.message, 'success');
-                applyLokasiFilters();
+                applyLokasiFilters(currentLokasiPage);
             } else {
                 errDiv.textContent = res.body.message || 'Gagal memperbarui data lokasi.';
                 errDiv.classList.remove('hidden');
@@ -735,7 +743,7 @@
             setProgressBar(1);
             if (res.status === 200 && res.body.status === 'success') {
                 showToast(res.body.message, 'success');
-                applyLokasiFilters();
+                applyLokasiFilters(currentLokasiPage);
             } else {
                 alert(res.body.message || 'Gagal menghapus lokasi.');
             }

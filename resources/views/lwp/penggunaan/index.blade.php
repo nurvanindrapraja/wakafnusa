@@ -78,7 +78,7 @@
 
                     <!-- Filter Kategori Utama -->
                     <div class="min-w-[220px]">
-                        <select id="filterKategori" onchange="applyFilters()" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:border-nu-green-500 focus:bg-white transition-all">
+                        <select id="filterKategori" onchange="applyFilters(1)" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:border-nu-green-500 focus:bg-white transition-all">
                             <option value="">Semua Kategori Utama</option>
                             @foreach($parentCategories as $cat)
                                 <option value="{{ $cat->KODE_PENG }}" {{ $kategori == $cat->KODE_PENG ? 'selected' : '' }}>
@@ -90,7 +90,7 @@
 
                     <!-- Filter Status -->
                     <div class="min-w-[150px]">
-                        <select id="filterStatus" onchange="applyFilters()" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:border-nu-green-500 focus:bg-white transition-all">
+                        <select id="filterStatus" onchange="applyFilters(1)" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:border-nu-green-500 focus:bg-white transition-all">
                             <option value="active" {{ $status == 'active' ? 'selected' : '' }}>Hanya Aktif</option>
                             <option value="trash" {{ $status == 'trash' ? 'selected' : '' }}>Data Sampah ({{ $stats['trash'] }})</option>
                             <option value="all" {{ $status == 'all' ? 'selected' : '' }}>Semua Data</option>
@@ -235,7 +235,7 @@
 
                 clearTimeout(searchDebounceTimer);
                 searchDebounceTimer = setTimeout(() => {
-                    applyFilters();
+                    applyFilters(1);
                 }, 350);
             });
         }
@@ -245,8 +245,10 @@
         const input = document.getElementById('searchUsage');
         input.value = '';
         document.getElementById('clearUsageSearch').classList.add('hidden');
-        applyFilters();
+        applyFilters(1);
     }
+
+    let currentUsagePage = {{ $usages->currentPage() }};
 
     function applyFilters(page = null) {
         const search = document.getElementById('searchUsage').value;
@@ -255,15 +257,18 @@
 
         setProgressBar(true);
 
+        if (page !== null && page !== undefined) {
+            currentUsagePage = parseInt(page);
+        } else {
+            page = currentUsagePage;
+        }
+
         const params = new URLSearchParams({
             search: search,
             kategori: kategori,
-            status: status
+            status: status,
+            page: page
         });
-
-        if (page) {
-            params.set('page', page);
-        }
 
         // Update URL query string without full page reload
         window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
@@ -474,7 +479,7 @@
         .then(data => {
             closeEditModal();
             showToast(data.message || 'Data penggunaan berhasil diperbarui.');
-            applyFilters();
+            applyFilters(currentUsagePage);
         })
         .catch(err => {
             errorMsg.textContent = err.message;
@@ -525,7 +530,7 @@
         .then(data => {
             closeDeleteConfirmModal();
             showToast(data.message || 'Data penggunaan dipindahkan ke sampah.');
-            applyFilters();
+            applyFilters(currentUsagePage);
         })
         .catch(err => {
             console.error(err);
@@ -555,7 +560,7 @@
         .then(res => res.json())
         .then(data => {
             showToast(data.message || 'Data penggunaan berhasil dipulihkan.');
-            applyFilters();
+            applyFilters(currentUsagePage);
         })
         .catch(err => {
             console.error(err);
@@ -605,7 +610,7 @@
         .then(data => {
             closeForceDeleteModal();
             showToast(data.message || 'Data penggunaan telah dihapus permanen.');
-            applyFilters();
+            applyFilters(currentUsagePage);
         })
         .catch(err => {
             alert(err.message);

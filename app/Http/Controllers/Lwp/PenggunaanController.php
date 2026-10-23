@@ -94,12 +94,12 @@ class PenggunaanController extends Controller
             });
         }
 
-        // Urutkan berdasarkan KODE_PENG secara numerik & leksikografis
+        // Urutkan data penggunaan: Dahulukan kategori Induk terlebih dahulu, baru diikuti turunannya
         $driver = DB::connection($connection)->getDriverName();
         if ($driver === 'mysql') {
-            $query->orderByRaw("CAST(SUBSTRING_INDEX(KODE_PENG, '.', 1) AS UNSIGNED) ASC, CAST(SUBSTRING_INDEX(KODE_PENG, '.', -1) AS UNSIGNED) ASC, KODE_PENG ASC");
+            $query->orderByRaw("CAST(SUBSTRING_INDEX(KODE_PENG, '.', 1) AS UNSIGNED) ASC, CASE WHEN KODE_PENG NOT LIKE '%.%' THEN 0 ELSE 1 END ASC, CAST(SUBSTRING_INDEX(KODE_PENG, '.', -1) AS UNSIGNED) ASC, KODE_PENG ASC");
         } else {
-            $query->orderBy('KODE_PENG', 'ASC');
+            $query->orderByRaw("CAST(KODE_PENG AS INTEGER) ASC, CASE WHEN KODE_PENG NOT LIKE '%.%' THEN 0 ELSE 1 END ASC, KODE_PENG ASC");
         }
 
         $usages = $query->paginate(15)

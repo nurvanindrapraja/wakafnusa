@@ -221,5 +221,34 @@ class MasterPenggunaanTest extends TestCase
         $response->assertSee('card-penggunaan-11', false);
         $response->assertSee('card-penggunaan-11_01', false);
     }
+
+    public function test_master_penggunaan_orders_parent_first_before_children()
+    {
+        $admin = LwpUser::create([
+            'NAMA_USER' => 'Admin PBNU',
+            'USERNAME_USER' => 'admin_pbnu',
+            'EMAIL_USER' => 'admin@pbnu.or.id',
+            'PASSWORD_USER' => sha1('secret'),
+            'LEVEL' => 9,
+            'ISDEL' => 0,
+        ]);
+
+        // Insert in scrambled order: 12.01, 12, 11.02
+        DB::table('wk_penggunaan')->insert([
+            ['KODE_PENG' => '12.01', 'PENGGUNAAN' => 'PESANTREN', 'KODE_PENG_OLD' => null, 'ICON' => null, 'ISDEL' => 0],
+            ['KODE_PENG' => '12', 'PENGGUNAAN' => 'PENDIDIKAN', 'KODE_PENG_OLD' => null, 'ICON' => null, 'ISDEL' => 0],
+            ['KODE_PENG' => '11.02', 'PENGGUNAAN' => 'MUSHOLLA', 'KODE_PENG_OLD' => null, 'ICON' => null, 'ISDEL' => 0],
+        ]);
+
+        $response = $this->actingAs($admin, 'lwp')->get(route('lwp.penggunaan.index'));
+        $response->assertStatus(200);
+
+        $usages = $response->viewData('usages');
+        $codes = $usages->pluck('KODE_PENG')->toArray();
+
+        // 11 must come before 11.01, 11.02, and 12 must come before 12.01
+        $this->assertEquals(['11', '11.01', '11.02', '12', '12.01'], $codes);
+    }
 }
+
 
